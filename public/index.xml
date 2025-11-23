@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>My Photography Portfolio</title>
+    <link>https://example.com/</link>
+    <description>Recent content on My Photography Portfolio</description>
+    <generator>Hugo</generator>
+    <language>en-us</language>
+    <lastBuildDate>Sun, 15 Oct 2023 00:00:00 +0000</lastBuildDate>
+    <atom:link href="https://example.com/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>The Andes Ascent</title>
+      <link>https://example.com/projects/south-america-trip/the-andes-ascent/</link>
+      <pubDate>Sun, 15 Oct 2023 00:00:00 +0000</pubDate>
+      <guid>https://example.com/projects/south-america-trip/the-andes-ascent/</guid>
+      <description>&lt;p&gt;The air grew thinner with every step we took. The ascent began in the humid valleys, lush with greenery and the sound of rushing water. As we climbed past 3,000 meters, the world transformed into a silent expanse of rock and ice.&lt;/p&gt;&#xA;&lt;p&gt;The physical challenge was immense, but the visual rewards were unparalleled. The light in the Andes has a quality I have never seen elsewhere—crisp, unforgiving, and utterly beautiful.&lt;/p&gt;</description>
+    </item>
+  </channel>
+</rss>

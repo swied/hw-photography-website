@@ -1,0 +1,13 @@
+baseURL = "https://example.com/"
+languageCode = "en-us"
+title = "My Photography Portfolio"
+theme = [] # No theme; we are building layouts manually
+
+[taxonomies]
+  tag = "tags"
+  project = "projects"
+
+[markup]
+  [markup.goldmark]
+    [markup.goldmark.renderer]
+      unsafe = true # Allows HTML in Markdown (useful for advanced layout tweaks)

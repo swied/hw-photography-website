@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ block "title" . }}{{ .Title }} | {{ .Site.Title }}{{ end }}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
+    
+    <style>
+        /* Custom CSS for the lightbox interaction */
+        .lightbox-overlay { display: none; }
+        .lightbox-overlay:target { display: flex; }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-900 font-sans flex flex-col min-h-screen">
+
+    <header class="bg-white shadow-sm sticky top-0 z-40">
+        <div class="max-w-4xl mx-auto px-4 py-4 flex justify-between items-center">
+            <a href="/" class="text-xl font-bold tracking-tight text-blue-600 hover:text-blue-800">
+                {{ .Site.Title }}
+            </a>
+            <nav class="space-x-4">
+                <a href="/projects" class="text-gray-600 hover:text-gray-900">Projects</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="flex-grow container mx-auto px-4 py-8 max-w-4xl">
+        {{ block "main" . }}{{ end }}
+    </main>
+
+    <footer class="bg-gray-100 border-t mt-12">
+        <div class="max-w-4xl mx-auto px-4 py-6 text-center text-gray-500 text-sm">
+            &copy; {{ now.Format "2006" }} {{ .Site.Title }}. All rights reserved.
+        </div>
+    </footer>
+
+</body>
+</html>

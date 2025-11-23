@@ -1,0 +1,46 @@
+{{/* 1. Get all images in the current Page Bundle */}}
+{{ $images := .Page.Resources.ByType "image" }}
+
+{{ if gt (len $images) 0 }}
+<div class="my-10 not-prose"> <h3 class="text-xl font-bold mb-4 text-gray-800 border-b pb-2">Photo Gallery</h3>
+    
+    <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+        {{ range $images }}
+            {{/* 2. Image Processing via Hugo Pipes */}}
+            {{/* Create a 300x300 Smart Cropped Thumbnail converted to WebP for speed */}}
+            {{ $thumb := .Fill "300x300 webp q80 smart" }}
+            
+            {{/* Create a Large version for the Lightbox (resized to max 1200px width) */}}
+            {{ $large := .Resize "1200x webp q90" }}
+
+            {{/* Generate a unique ID for the CSS anchor target */}}
+            {{ $imgID := printf "img-%s" .Name | anchorize }}
+
+            <div class="relative group overflow-hidden rounded-lg shadow-md aspect-square cursor-pointer">
+                <a href="#{{ $imgID }}" class="block w-full h-full">
+                    <img src="{{ $thumb.RelPermalink }}" 
+                         alt="{{ .Name }}" 
+                         width="{{ $thumb.Width }}" 
+                         height="{{ $thumb.Height }}" 
+                         class="object-cover w-full h-full transition-transform duration-300 group-hover:scale-110">
+                </a>
+            </div>
+
+            <a href="#_" id="{{ $imgID }}" class="lightbox-overlay fixed inset-0 z-50 bg-black/90 backdrop-blur-sm justify-center items-center p-4 cursor-zoom-out transition-opacity">
+                <div class="relative max-w-5xl max-h-screen p-2">
+                    <img src="{{ $large.RelPermalink }}" 
+                         alt="{{ .Name }}" 
+                         class="max-h-[90vh] max-w-full rounded shadow-2xl object-contain">
+                    <span class="absolute bottom-4 left-0 right-0 text-center text-white/70 text-sm">
+                        Click anywhere to close
+                    </span>
+                </div>
+            </a>
+        {{ end }}
+    </div>
+</div>
+{{ else }}
+<div class="p-4 bg-yellow-50 text-yellow-800 rounded border border-yellow-200">
+    <strong>Note:</strong> No images found in this page bundle. Please add .jpg or .png files to the content folder.
+</div>
+{{ end }}
