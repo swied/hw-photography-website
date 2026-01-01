@@ -64,10 +64,10 @@ jobs:
           extended: true
 
       # --- DEBUG STEP: CHECK LAYOUTS ---
-      - name: Check Layout Files
+      - name: Check Site Files
         run: |
-          echo "Listing site/layouts directory:"
-          ls -R site/layouts
+          echo "Listing of the site directory:"
+          ls -R site
       # ---------------------------------
 
       - name: Build

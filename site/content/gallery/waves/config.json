@@ -1,0 +1,25 @@
+{
+    "title": "Waves",
+    "story": "Photos of large waves",
+    "visibility": "public",
+    "photos": {
+        "DSC1610.jpg": {
+            "title": "Wave 1",
+            "story": "A large wave breaking along the coast of La Jolla",
+            "product_id": "",
+            "licensing": {
+                "adobe": "",
+                "getty": ""
+            }
+          },
+        "DSC1680.jpg": {
+            "title": "Wave 1",
+            "story": "A large wave breaking along the coast of La Jolla",
+            "product_id": "",
+            "licensing": {
+                "adobe": "",
+                "getty": ""
+            }
+          }
+    }
+}

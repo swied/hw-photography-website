@@ -1,0 +1,34 @@
+{
+    "title": "Lifeguard Tower",
+    "story": "Photos of the lifeguard tower in La Jolla",
+    "visibility": "public",
+    "photos": {
+        "DSC001_WM.jpg": {
+            "title": "Towering wave",
+            "story": "Large wave breaking above the tower",
+            "product_id": "",
+            "licensing": {
+                "adobe": "",
+                "getty": ""
+            }
+          },
+        "DSC002_WM.jpg": {
+            "title": "Seagull",
+            "story": "A seagull flying toward the lifeguard tower while large waves break on the rocks",
+            "product_id": "",
+            "licensing": {
+                "adobe": "",
+                "getty": ""
+            }
+          },
+        "DSC003_WM.jpg": {
+            "title": "Children's Pool",
+            "story": "A crowd watching the large Waves",
+            "product_id": "",
+            "licensing": {
+                "adobe": "",
+                "getty": ""
+            }
+          }
+    }
+}
