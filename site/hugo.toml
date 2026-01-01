@@ -23,4 +23,4 @@ theme = [] # We are building custom layouts, so no theme needed
   
 # Disable Taxonomies (Tags/Categories) since we are using a custom JSON architecture.
 # This silences the "found no layout file for... taxonomy" warning.
-disableKinds = ["taxonomy", "term"]
+# disableKinds = ["taxonomy", "term"]
