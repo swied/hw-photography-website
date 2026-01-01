@@ -105,9 +105,6 @@ def process_gallery(bucket, prefix, mode="public"):
     for blob in blobs:
         if blob.name.lower().endswith(('.jpg', '.jpeg', '.png')):
             filename = os.path.basename(blob.name)
-            # Ensure thumbnails go to the slugified folder to match URLs, 
-            # OR keep them mapped to raw name. 
-            # Simplest for GCS structure is to mirror the originals structure:
             thumb_path = f"thumbnails/{raw_name}/{os.path.splitext(filename)[0]}.webp"
             
             # 3. URL Generation
@@ -118,11 +115,7 @@ def process_gallery(bucket, prefix, mode="public"):
             else:
                 img_url = blob.public_url
                 # We need to ensure the thumbnail URL uses the correct path encoding
-                # Using the raw_name in the path matches the storage structure
                 thumb_url = f"https://storage.googleapis.com/{BUCKET_NAME}/thumbnails/{raw_name}/{os.path.splitext(filename)[0]}.webp"
-                # Note: If raw_name has spaces, they should technically be encoded, 
-                # but GCS public URLs usually handle basic spaces. 
-                # Ideally, we'd use urllib.parse.quote, but this usually works for browsers.
                 thumb_url = thumb_url.replace(" ", "%20")
                 img_url = img_url.replace(" ", "%20") if img_url else None
 
@@ -134,23 +127,31 @@ def process_gallery(bucket, prefix, mode="public"):
                 exif = get_exif_data(img_bytes)
                 
                 with Image.open(BytesIO(img_bytes)) as img:
-                    # Extract ICC Profile to preserve colors
+                    # A. Capture metadata BEFORE any conversion/processing
+                    # This ensures we don't lose the profile if convert() creates a new object
                     icc_profile = img.info.get('icc_profile')
+                    original_mode = img.mode
 
-                    # Convert to RGB to ensure compatibility (e.g. from CMYK)
+                    # B. Convert to RGB to ensure compatibility (e.g. from RGBA or CMYK)
                     if img.mode != 'RGB':
                         img = img.convert('RGB')
                         
-                    img.thumbnail(THUMB_SIZE)
+                    # C. High Quality Resize
+                    img.thumbnail(THUMB_SIZE, Image.Resampling.LANCZOS)
+                    
                     thumb_buffer = BytesIO()
                     
-                    # Save args: format, quality, and preserve ICC profile
+                    # D. Save Configuration
                     save_args = {
                         "format": "WEBP",
-                        "lossless": True,
-                        "method": 0
+                        "quality": 85,
+                        "method": 6
                     }
-                    if icc_profile:
+                    
+                    # Only embed the profile if the color space hasn't fundamentally changed 
+                    # (like CMYK -> RGB). Embedding a CMYK profile into an RGB WebP 
+                    # results in broken/inverted colors.
+                    if icc_profile and original_mode != 'CMYK':
                         save_args["icc_profile"] = icc_profile
                         
                     img.save(thumb_buffer, **save_args)
@@ -158,7 +159,7 @@ def process_gallery(bucket, prefix, mode="public"):
             else:
                  exif = {} 
 
-            # 5. Default Photo Metadata (Filename -> Title/Story)
+            # 5. Default Photo Metadata
             clean_name = os.path.splitext(filename)[0].replace("_", " ").replace("-", " ")
 
             photo_data = {
@@ -166,13 +167,12 @@ def process_gallery(bucket, prefix, mode="public"):
                 "src": img_url,
                 "thumb": thumb_url,
                 "exif": exif,
-                "title": clean_name, # Default Title
-                "story": "", # Default Story (Empty is cleaner, or use clean_name)
+                "title": clean_name,
+                "story": "", 
                 "product_id": None,
                 "licensing": {}
             }
 
-            # Overlay config.json data if available
             if filename in gallery_meta["photos_meta"]:
                 manual_data = gallery_meta["photos_meta"][filename]
                 photo_data.update(manual_data)
@@ -181,7 +181,6 @@ def process_gallery(bucket, prefix, mode="public"):
 
     gallery_meta["photos"] = photos
     
-    # Cleanup internal meta key
     if "photos_meta" in gallery_meta:
         del gallery_meta["photos_meta"]
     
