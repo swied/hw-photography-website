@@ -1,0 +1,25 @@
+{
+    "title": "Bailey",
+    "story": "Photos of the best boy",
+    "visibility": "public",
+    "photos": {
+        "DSC2052": {
+            "title": "Bailey 1",
+            "story": "Bailey",
+            "product_id": "",
+            "licensing": {
+                "adobe": "",
+                "getty": ""
+            }
+          },
+        "DSC002_WM.jpg": {
+            "title": "Bailey 2",
+            "story": "Bailey",
+            "product_id": "",
+            "licensing": {
+                "adobe": "",
+                "getty": ""
+            }
+          }
+    }
+}
