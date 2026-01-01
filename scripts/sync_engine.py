@@ -144,7 +144,7 @@ def process_gallery(bucket, prefix, mode="public"):
                             # Fallback: Just convert to RGB mode if transformation failed
 
                     # B. Ensure RGB mode (handling CMYK, RGBA, etc.)
-                    if img.mode != 'RGB':
+                    if img.mode not in ('RGB', 'RGBA'):
                         img = img.convert('RGB')
                         
                     # C. High Quality Resize
