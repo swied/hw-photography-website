@@ -210,7 +210,7 @@ def main():
         if gallery_data:
             output_data["galleries"].append(gallery_data)
 
-    target_file = ADMIN_DATA_FILE_PATH if args.mode == "admin" else DATA_FILE_PATH
+    target_file = ADMIN_DATA_FILE_PATH if args.mode == "admin" else DATA_FILE_PATH 
     
     os.makedirs(os.path.dirname(target_file), exist_ok=True)
     with open(target_file, "w") as f:
