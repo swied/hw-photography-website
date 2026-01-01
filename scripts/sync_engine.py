@@ -206,7 +206,7 @@ def main():
 
     for prefix in prefixes:
         gallery_data = process_gallery(bucket, prefix, mode=args.mode)
-        if gallery_data:
+        if gallery_data: 
             output_data["galleries"].append(gallery_data)
 
     target_file = ADMIN_DATA_FILE_PATH if args.mode == "admin" else DATA_FILE_PATH
