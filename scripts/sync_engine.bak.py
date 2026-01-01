@@ -117,21 +117,20 @@ def process_gallery(bucket, prefix, mode="public"):
                     img.save(thumb_buffer, format="WEBP", quality=80)
                     thumb_blob.upload_from_string(thumb_buffer.getvalue(), content_type="image/webp")
             else:
+                 # In a real production run, you might want to cache EXIF in GCS to avoid re-downloading
                  exif = {} 
 
             # 4. Merge Manual Metadata (Commerce & Story)
-            # Create a clean default title from filename (e.g. "DSC01_WM.jpg" -> "DSC01 WM")
-            clean_name = os.path.splitext(filename)[0].replace("_", " ").replace("-", " ")
-
+            # Default values
             photo_data = {
                 "filename": filename,
                 "src": img_url,
                 "thumb": thumb_url,
                 "exif": exif,
-                "title": clean_name, # Default to filename
-                "story": clean_name, # Default to filename
-                "product_id": None,
-                "licensing": {}
+                "title": "",
+                "story": "",
+                "product_id": None,     # Lemon Squeezy Product ID
+                "licensing": {}         # Dict: { "adobe": "url", "getty": "url" }
             }
 
             # Overlay config.json data if it exists for this file
