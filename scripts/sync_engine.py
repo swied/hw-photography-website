@@ -134,20 +134,20 @@ def process_gallery(bucket, prefix, mode="public"):
                 exif = get_exif_data(img_bytes)
                 
                 with Image.open(BytesIO(img_bytes)) as img:
+                    # Extract ICC Profile to preserve colors
+                    icc_profile = img.info.get('icc_profile')
+
                     # Convert to RGB to ensure compatibility (e.g. from CMYK)
                     if img.mode != 'RGB':
                         img = img.convert('RGB')
                         
-                    # Extract ICC Profile to preserve colors
-                    icc_profile = img.info.get('icc_profile')
-                    
                     img.thumbnail(THUMB_SIZE)
                     thumb_buffer = BytesIO()
                     
                     # Save args: format, quality, and preserve ICC profile
                     save_args = {
                         "format": "WEBP",
-                        "quality": 100,
+                        "lossless": True,
                         "method": 0
                     }
                     if icc_profile:
