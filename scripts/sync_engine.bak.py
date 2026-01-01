@@ -2,6 +2,7 @@ import os
 import json
 import logging
 import argparse
+import re
 from io import BytesIO
 from datetime import timedelta
 from google.cloud import storage
@@ -55,57 +56,78 @@ def get_exif_data(image_bytes):
     
     return exif_data
 
+def slugify(text):
+    """Converts 'My Folder Name' to 'my-folder-name' for URL safety."""
+    text = text.lower().strip()
+    text = re.sub(r'[^\w\s-]', '', text)
+    text = re.sub(r'[\s_-]+', '-', text)
+    return text
+
 def process_gallery(bucket, prefix, mode="public"):
     """Scans a gallery folder, generates thumbnails, and builds metadata."""
     
-    gallery_name = prefix.strip("/").split("/")[-1]
-    logging.info(f"Processing Gallery: {gallery_name}")
+    # Raw folder name (e.g., "Japan Trip 2024")
+    raw_name = prefix.strip("/").split("/")[-1]
+    
+    # 1. Generate robust defaults in case config.json is missing
+    safe_id = slugify(raw_name) # "japan-trip-2024"
+    human_title = raw_name.replace("-", " ").replace("_", " ").title() # "Japan Trip 2024"
 
-    # 1. Load Manual Configuration (The 'Brain' of the gallery)
+    logging.info(f"Processing Gallery: {raw_name} (ID: {safe_id})")
+
     config_blob = bucket.get_blob(f"{prefix}config.json")
     gallery_meta = {
-        "id": gallery_name,
-        "title": gallery_name.replace("-", " ").title(),
+        "id": safe_id,
+        "title": human_title,
         "story": "",
         "visibility": "public",
-        "photos_meta": {} # Dictionary keyed by filename for manual overrides
+        "photos_meta": {} 
     }
     
+    # 2. Load Config if it exists (Overrides defaults)
     if config_blob:
         try:
             loaded_meta = json.loads(config_blob.download_as_text())
-            # We separate top-level keys from the 'photos' dictionary
             if "photos" in loaded_meta:
                 gallery_meta["photos_meta"] = loaded_meta.pop("photos")
             gallery_meta.update(loaded_meta)
         except Exception as e:
-            logging.error(f"Error reading config.json for {gallery_name}: {e}")
+            logging.error(f"Error reading config.json for {raw_name}: {e}")
 
     # Access Control Logic
     if mode == "public" and gallery_meta["visibility"] != "public":
-        logging.info(f"Skipping private gallery: {gallery_name}")
+        logging.info(f"Skipping private gallery: {safe_id}")
         return None
 
     photos = []
-    blobs = bucket.list_blobs(prefix=f"originals/{gallery_name}/")
+    blobs = bucket.list_blobs(prefix=f"originals/{raw_name}/")
 
     for blob in blobs:
         if blob.name.lower().endswith(('.jpg', '.jpeg', '.png')):
             filename = os.path.basename(blob.name)
-            thumb_path = f"thumbnails/{gallery_name}/{os.path.splitext(filename)[0]}.webp"
+            # Ensure thumbnails go to the slugified folder to match URLs, 
+            # OR keep them mapped to raw name. 
+            # Simplest for GCS structure is to mirror the originals structure:
+            thumb_path = f"thumbnails/{raw_name}/{os.path.splitext(filename)[0]}.webp"
             
-            # 2. URL Generation
+            # 3. URL Generation
             if mode == "admin":
                 img_url = blob.generate_signed_url(expiration=timedelta(hours=1))
                 thumb_blob = bucket.blob(thumb_path)
                 thumb_url = thumb_blob.generate_signed_url(expiration=timedelta(hours=1)) if thumb_blob.exists() else None
             else:
                 img_url = blob.public_url
-                thumb_url = f"https://storage.googleapis.com/{BUCKET_NAME}/{thumb_path}"
+                # We need to ensure the thumbnail URL uses the correct path encoding
+                # Using the raw_name in the path matches the storage structure
+                thumb_url = f"https://storage.googleapis.com/{BUCKET_NAME}/thumbnails/{raw_name}/{os.path.splitext(filename)[0]}.webp"
+                # Note: If raw_name has spaces, they should technically be encoded, 
+                # but GCS public URLs usually handle basic spaces. 
+                # Ideally, we'd use urllib.parse.quote, but this usually works for browsers.
+                thumb_url = thumb_url.replace(" ", "%20")
+                img_url = img_url.replace(" ", "%20") if img_url else None
 
-            # 3. Thumbnail & EXIF
+            # 4. Thumbnail Generation
             thumb_blob = bucket.blob(thumb_path)
-            # Regenerate if missing or if we are forced to
             if not thumb_blob.exists() and mode != "read_only":
                 logging.info(f"Generating thumbnail for {filename}")
                 img_bytes = blob.download_as_bytes()
@@ -117,23 +139,23 @@ def process_gallery(bucket, prefix, mode="public"):
                     img.save(thumb_buffer, format="WEBP", quality=80)
                     thumb_blob.upload_from_string(thumb_buffer.getvalue(), content_type="image/webp")
             else:
-                 # In a real production run, you might want to cache EXIF in GCS to avoid re-downloading
                  exif = {} 
 
-            # 4. Merge Manual Metadata (Commerce & Story)
-            # Default values
+            # 5. Default Photo Metadata (Filename -> Title/Story)
+            clean_name = os.path.splitext(filename)[0].replace("_", " ").replace("-", " ")
+
             photo_data = {
                 "filename": filename,
                 "src": img_url,
                 "thumb": thumb_url,
                 "exif": exif,
-                "title": "",
-                "story": "",
-                "product_id": None,     # Lemon Squeezy Product ID
-                "licensing": {}         # Dict: { "adobe": "url", "getty": "url" }
+                "title": clean_name, # Default Title
+                "story": "", # Default Story (Empty is cleaner, or use clean_name)
+                "product_id": None,
+                "licensing": {}
             }
 
-            # Overlay config.json data if it exists for this file
+            # Overlay config.json data if available
             if filename in gallery_meta["photos_meta"]:
                 manual_data = gallery_meta["photos_meta"][filename]
                 photo_data.update(manual_data)
@@ -142,8 +164,9 @@ def process_gallery(bucket, prefix, mode="public"):
 
     gallery_meta["photos"] = photos
     
-    # Cleanup internal meta key before output
-    del gallery_meta["photos_meta"]
+    # Cleanup internal meta key
+    if "photos_meta" in gallery_meta:
+        del gallery_meta["photos_meta"]
     
     if photos and "cover" not in gallery_meta:
         gallery_meta["cover"] = photos[0]["thumb"]
