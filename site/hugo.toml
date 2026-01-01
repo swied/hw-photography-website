@@ -1,6 +1,6 @@
 baseURL = "https://heatherwiedphotography.com/"
 languageCode = "en-us"
-title = "My Portfolio"
+title = "My Portfolio (Under Construction)"
 theme = [] # We are building custom layouts, so no theme needed
 
 [module]
@@ -14,13 +14,8 @@ theme = [] # We are building custom layouts, so no theme needed
       unsafe = true # Needed for raw HTML in templates if used
 
 [params]
-  description = "A narrative photography portfolio."
+  description = "Example photo galleries"
   author = "Your Name"
   
   # Tailwind Support
   # Ensure you run `npx tailwindcss -i ./assets/css/input.css -o ./static/css/style.css --watch` during dev
-
-  
-# Disable Taxonomies (Tags/Categories) since we are using a custom JSON architecture.
-# This silences the "found no layout file for... taxonomy" warning.
-# disableKinds = ["taxonomy", "term"]

@@ -1,26 +1,36 @@
-{{ define "main" }}
-<div class="container mx-auto px-4 py-12">
-    <header class="text-center mb-16">
-        <h1 class="text-4xl font-bold mb-4">{{ .Site.Title }}</h1>
-        <p class="text-gray-600 max-w-xl mx-auto">{{ .Site.Params.description }}</p>
+{{ define "main" }}  
+<div class="container mx-auto px-4 py-12">  
+    <header class="text-center mb-16">  
+        <h1 class="text-4xl font-bold mb-4 tracking-tight">{{ .Site.Title }}</h1>  
+        <p class="text-gray-500 max-w-xl mx-auto">{{ .Site.Params.description }}</p>  
     </header>
 
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-        {{ $data := .Site.Data.photos }}
-        {{ range $data.galleries }}
-        <a href="/gallery/{{ .id }}" class="group block bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow overflow-hidden">
-            <div class="aspect-w-3 aspect-h-2 relative overflow-hidden bg-gray-200">
-                <img src="{{ .cover }}" alt="{{ .title }}" class="object-cover w-full h-full transform group-hover:scale-105 transition-transform duration-500">
-                {{ if eq .visibility "private" }}
-                <div class="absolute top-2 right-2 bg-red-500 text-white text-xs px-2 py-1 rounded">Private</div>
-                {{ end }}
-            </div>
-            <div class="p-6">
-                <h2 class="text-xl font-bold mb-2 group-hover:text-blue-600 transition-colors">{{ .title }}</h2>
-                <p class="text-gray-600 line-clamp-3 text-sm">{{ .story }}</p>
-            </div>
-        </a>
-        {{ end }}
-    </div>
-</div>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">  
+        {{ $data := .Site.Data.photos }}  
+        {{ if $data }}  
+            {{ range $data.galleries }}  
+            <a href="/gallery/{{ .id }}" class="group block bg-white rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden border border-gray-100">  
+                <div class="aspect-w-3 aspect-h-2 relative overflow-hidden bg-gray-100">  
+                    {{ if .cover }}  
+                    <img src="{{ .cover }}" alt="{{ .title }}" class="object-cover w-full h-full transform group-hover:scale-105 transition-transform duration-700">  
+                    {{ else }}  
+                    <div class="flex items-center justify-center h-full text-gray-300">No Cover</div>  
+                    {{ end }}  
+                    {{ if eq .visibility "private" }}  
+                    <div class="absolute top-2 right-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded">PRIVATE</div>  
+                    {{ end }}  
+                </div>  
+                <div class="p-6">  
+                    <h2 class="text-xl font-bold mb-2 text-gray-900 group-hover:text-blue-600 transition-colors">{{ .title }}</h2>  
+                    <p class="text-gray-500 line-clamp-3 text-sm leading-relaxed">{{ .story }}</p>  
+                </div>  
+            </a>  
+            {{ end }}  
+        {{ else }}  
+            <div class="col-span-full text-center text-gray-400 py-12">  
+                <p>No galleries found. Check site/data/photos.json</p>  
+            </div>  
+        {{ end }}  
+    </div>  
+</div>  
 {{ end }}

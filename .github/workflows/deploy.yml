@@ -70,7 +70,7 @@ jobs:
           ls -R site
 
       # --- DEBUG STEP: CHECK CONTENTS of site/data/photos.json ---
-      - name: Check phots.json contents
+      - name: Check photos.json contents
         run: |
           echo "Contents of site/data/photos.json:"
           cat site/data/photos.json
