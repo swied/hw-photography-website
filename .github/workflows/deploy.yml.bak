@@ -3,8 +3,8 @@ name: Deploy Portfolio
 on:
   push:
     branches: ["main"]
-  workflow_dispatch:
-  repository_dispatch:
+  workflow_dispatch: # Allows manual trigger from GitHub UI
+  repository_dispatch: # Allows trigger via Webhook from GCS (Advanced)
     types: [gcs-update]
 
 permissions:
@@ -26,7 +26,7 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.10'
+          python-version: '3.11'
 
       - name: Install Python Deps
         run: |
@@ -46,29 +46,16 @@ jobs:
           python scripts/sync_engine.py --mode public
 
       - name: Generate Gallery Stubs
+        # This creates a .md file for every gallery found in the JSON so Hugo builds a page for it
         run: |
           mkdir -p site/content/gallery
-          python -c "import json, os; 
-          data_path='site/data/photos.json';
-          print(f'Checking {data_path}...');
-          if os.path.exists(data_path):
-              data=json.load(open(data_path)); 
-              [open(f'site/content/gallery/{g[\"id\"]}.md', 'w').write(f'---\ntitle: {g[\"title\"]}\n---') for g in data['galleries']]
-          else:
-              print('No photos.json found, skipping stub generation.')"
+          python -c "import json; data=json.load(open('site/data/photos.json')); [open(f'site/content/gallery/{g[\"id\"]}.md', 'w').write(f'---\ntitle: {g[\"title\"]}\n---') for g in data['galleries']]"
 
       - name: Setup Hugo
         uses: peaceiris/actions-hugo@v2
         with:
           hugo-version: '0.110.0'
           extended: true
-
-      # --- DEBUG STEP: CHECK LAYOUTS ---
-      - name: Check Layout Files
-        run: |
-          echo "Listing site/layouts directory:"
-          ls -R site/layouts
-      # ---------------------------------
 
       - name: Build
         working-directory: ./site
