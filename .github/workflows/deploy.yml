@@ -63,11 +63,17 @@ jobs:
           hugo-version: '0.110.0'
           extended: true
 
-      # --- DEBUG STEP: CHECK LAYOUTS ---
+      # --- DEBUG STEP: CHECK SITE DIRECTORY ---
       - name: Check Site Files
         run: |
           echo "Listing of the site directory:"
           ls -R site
+
+      # --- DEBUG STEP: CHECK CONTENTS of site/data/photos.json ---
+      - name: Check phots.json contents
+        run: |
+          echo "Contents of site/data/photos.json:"
+          cat site/data/photos.json
       # ---------------------------------
 
       - name: Build
