@@ -148,7 +148,7 @@ def process_gallery(bucket, prefix, mode="public"):
                     save_args = {
                         "format": "WEBP",
                         "quality": 100,
-                        "method": 6
+                        "method": 0
                     }
                     if icc_profile:
                         save_args["icc_profile"] = icc_profile
