@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ block "title" . }}{{ .Title }} | {{ .Site.Title }}{{ end }}</title>
+    
+    <!-- Alpine.js (For the Lightbox/Modal interactions) -->
+    <script src="//unpkg.com/alpinejs" defer></script>
+    
+    <!-- Tailwind CSS (CDN for Dev - switch to built CSS for production) -->
+    <script src="https://cdn.tailwindcss.com?plugins=typography,aspect-ratio"></script>
+    
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        [x-cloak] { display: none !important; }
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-900 flex flex-col min-h-screen">
+
+    <!-- Navigation -->
+    <nav class="bg-white border-b border-gray-100 sticky top-0 z-40 bg-opacity-90 backdrop-blur-sm">
+        <div class="container mx-auto px-4 h-16 flex items-center justify-between">
+            <a href="/" class="text-lg font-bold tracking-tight hover:text-blue-600 transition-colors">
+                {{ .Site.Title }}
+            </a>
+            <div class="flex gap-6 text-sm font-medium text-gray-500">
+                <a href="/" class="hover:text-black transition-colors">Collections</a>
+                <!-- Add 'About' or 'Contact' links here later -->
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content Injection -->
+    <main class="flex-grow">
+        {{ block "main" . }}{{ end }}
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-gray-100 mt-20 py-12">
+        <div class="container mx-auto px-4 text-center space-y-2">
+            <p class="text-gray-400 text-sm">&copy; {{ now.Year }} {{ .Site.Params.author }}. All rights reserved.</p>
+            <p class="text-gray-300 text-xs">Powered by The Storyteller Engine</p>
+        </div>
+    </footer>
+
+</body>
+</html>

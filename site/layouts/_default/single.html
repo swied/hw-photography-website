@@ -1,0 +1,137 @@
+{{ define "main" }}
+{{ $galleryID := .File.BaseFileName }}
+{{ $allPhotos := .Site.Data.photos.galleries }}
+{{ $gallery := index (where $allPhotos "id" $galleryID) 0 }}
+
+{{ if $gallery }}
+<!-- Include Lemon Squeezy Overlay Script -->
+<script src="https://assets.lemonsqueezy.com/lemon.js" defer></script>
+
+<div class="container mx-auto px-4 py-12" x-data="{ activeImage: null, showModal: false }">
+    
+    <!-- Gallery Header -->
+    <div class="mb-12 max-w-3xl">
+        <a href="/" class="text-sm text-gray-500 hover:text-black mb-4 inline-block">&larr; Back to Collections</a>
+        <h1 class="text-4xl font-bold mb-4">{{ $gallery.title }}</h1>
+        <div class="prose max-w-none text-gray-700">
+            <p>{{ $gallery.story }}</p>
+        </div>
+    </div>
+
+    <!-- Masonry Grid -->
+    <div class="columns-1 md:columns-2 lg:columns-3 gap-4 space-y-4">
+        {{ range $index, $photo := $gallery.photos }}
+        <div class="break-inside-avoid relative group cursor-pointer" 
+             @click="activeImage = {{ $photo | jsonify }}; showModal = true">
+            
+            <img src="{{ .thumb }}" alt="{{ .filename }}" loading="lazy" class="w-full rounded-lg hover:opacity-90 transition-opacity">
+            
+            <!-- Grid Overlay Icons -->
+            <div class="absolute bottom-2 right-2 flex gap-1">
+                {{ if .product_id }}
+                <span class="bg-green-500 text-white text-xs px-2 py-1 rounded shadow">For Sale</span>
+                {{ end }}
+                {{ if .licensing }}
+                <span class="bg-blue-500 text-white text-xs px-2 py-1 rounded shadow">Licensable</span>
+                {{ end }}
+            </div>
+        </div>
+        {{ end }}
+    </div>
+
+    <!-- Lightbox Modal -->
+    <div x-show="showModal" 
+         class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-95 p-0 md:p-4"
+         x-transition:enter="transition ease-out duration-300"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="transition ease-in duration-200"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0"
+         style="display: none;">
+         
+        <div class="relative w-full h-full flex flex-col md:flex-row bg-white md:bg-transparent md:rounded-lg overflow-hidden">
+            
+            <!-- Close Button -->
+            <button @click="showModal = false" class="absolute top-4 right-4 z-50 p-2 text-gray-800 md:text-white bg-white md:bg-transparent rounded-full md:rounded-none shadow md:shadow-none">
+                <svg class="w-6 h-6 md:w-8 md:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+
+            <!-- Main Image (Left/Top) -->
+            <div class="flex-1 flex items-center justify-center bg-black p-2 md:p-4">
+                <img :src="activeImage?.src" class="max-h-full max-w-full object-contain shadow-2xl">
+            </div>
+
+            <!-- Details Panel (Right/Bottom) -->
+            <div class="w-full md:w-96 bg-white text-gray-900 flex flex-col h-1/2 md:h-full overflow-y-auto">
+                
+                <div class="p-6 space-y-6">
+                    <!-- 1. Title & Story -->
+                    <div>
+                        <h3 class="text-2xl font-bold mb-2" x-text="activeImage?.title || 'Untitled'"></h3>
+                        <p class="text-gray-600 italic text-sm" x-show="activeImage?.story" x-text="activeImage?.story"></p>
+                    </div>
+
+                    <!-- 2. Commerce Section (Smart Buttons) -->
+                    <div class="border-t border-b border-gray-100 py-4 space-y-3">
+                        
+                        <!-- Direct Sale (Lemon Squeezy) -->
+                        <template x-if="activeImage?.product_id">
+                            <a :href="'https://store.lemonsqueezy.com/checkout/buy/' + activeImage.product_id" 
+                               class="lemonsqueezy-button block w-full bg-black text-white text-center py-3 rounded hover:bg-gray-800 transition font-medium">
+                                Purchase High-Res Download
+                            </a>
+                        </template>
+
+                        <!-- Licensing Links -->
+                        <template x-if="activeImage?.licensing && Object.keys(activeImage.licensing).length > 0">
+                            <div class="space-y-2">
+                                <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide">License via:</p>
+                                <div class="flex flex-wrap gap-2">
+                                    <template x-for="(url, agency) in activeImage.licensing">
+                                        <a :href="url" target="_blank" rel="noopener noreferrer"
+                                           class="text-xs px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded border border-gray-200 capitalize"
+                                           x-text="agency">
+                                        </a>
+                                    </template>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+
+                    <!-- 3. Tech Specs -->
+                    <div class="text-sm text-gray-500">
+                        <h4 class="font-bold text-gray-900 mb-2">Technical Details</h4>
+                        <template x-if="activeImage?.exif">
+                            <dl class="grid grid-cols-2 gap-x-4 gap-y-2">
+                                <div x-show="activeImage.exif.camera">
+                                    <dt class="text-xs uppercase tracking-wider">Camera</dt>
+                                    <dd class="text-gray-900" x-text="activeImage.exif.camera"></dd>
+                                </div>
+                                <div x-show="activeImage.exif.lens">
+                                    <dt class="text-xs uppercase tracking-wider">Lens</dt>
+                                    <dd class="text-gray-900" x-text="activeImage.exif.lens"></dd>
+                                </div>
+                                <div x-show="activeImage.exif.aperture">
+                                    <dt class="text-xs uppercase tracking-wider">Aperture</dt>
+                                    <dd class="text-gray-900" x-text="activeImage.exif.aperture"></dd>
+                                </div>
+                                <div x-show="activeImage.exif.iso">
+                                    <dt class="text-xs uppercase tracking-wider">ISO</dt>
+                                    <dd class="text-gray-900" x-text="activeImage.exif.iso"></dd>
+                                </div>
+                            </dl>
+                        </template>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{{ else }}
+<div class="container mx-auto py-20 text-center">
+    <h2 class="text-2xl font-bold">Gallery Not Found</h2>
+</div>
+{{ end }}
+{{ end }}

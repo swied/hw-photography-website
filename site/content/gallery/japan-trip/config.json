@@ -1,0 +1,20 @@
+{  
+  "title": "Japan 2024",  
+  "story": "A journey through the neon streets of Tokyo.",  
+  "visibility": "public",  
+  "photos": {  
+    "DSC001_WM.jpg": {  
+      "title": "Neon Rain",  
+      "story": "Captured at 2 AM in Shinjuku.",  
+      "product_id": "89324-variant-id",   
+      "licensing": {  
+        "adobe": "[https://stock.adobe.com/image/](https://stock.adobe.com/image/)...",  
+        "getty": "[https://www.gettyimages.com/detail/](https://www.gettyimages.com/detail/)..."  
+      }  
+    },  
+    "DSC002_WM.jpg": {  
+      "title": "Quiet Temple",  
+      "product_id": "89325-variant-id"  
+    }  
+  }  
+}
