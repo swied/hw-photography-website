@@ -6,7 +6,7 @@ import re
 from io import BytesIO
 from datetime import timedelta
 from google.cloud import storage
-from PIL import Image, ExifTags
+from PIL import Image, ExifTags, ImageCms # Added ImageCms for color conversion
 
 # Configuration
 BUCKET_NAME = os.environ.get("GCS_BUCKET_NAME", "my-photo-portfolio-bucket")
@@ -105,9 +105,6 @@ def process_gallery(bucket, prefix, mode="public"):
     for blob in blobs:
         if blob.name.lower().endswith(('.jpg', '.jpeg', '.png')):
             filename = os.path.basename(blob.name)
-            # Ensure thumbnails go to the slugified folder to match URLs, 
-            # OR keep them mapped to raw name. 
-            # Simplest for GCS structure is to mirror the originals structure:
             thumb_path = f"thumbnails/{raw_name}/{os.path.splitext(filename)[0]}.webp"
             
             # 3. URL Generation
@@ -118,11 +115,7 @@ def process_gallery(bucket, prefix, mode="public"):
             else:
                 img_url = blob.public_url
                 # We need to ensure the thumbnail URL uses the correct path encoding
-                # Using the raw_name in the path matches the storage structure
                 thumb_url = f"https://storage.googleapis.com/{BUCKET_NAME}/thumbnails/{raw_name}/{os.path.splitext(filename)[0]}.webp"
-                # Note: If raw_name has spaces, they should technically be encoded, 
-                # but GCS public URLs usually handle basic spaces. 
-                # Ideally, we'd use urllib.parse.quote, but this usually works for browsers.
                 thumb_url = thumb_url.replace(" ", "%20")
                 img_url = img_url.replace(" ", "%20") if img_url else None
 
@@ -134,31 +127,41 @@ def process_gallery(bucket, prefix, mode="public"):
                 exif = get_exif_data(img_bytes)
                 
                 with Image.open(BytesIO(img_bytes)) as img:
-                    # Extract ICC Profile to preserve colors
+                    # A. COLOR MANAGEMENT (Convert to sRGB)
                     icc_profile = img.info.get('icc_profile')
+                    
+                    if icc_profile:
+                        try:
+                            # 1. Load source profile from image
+                            src_profile = ImageCms.ImageCmsProfile(BytesIO(icc_profile))
+                            # 2. Create destination sRGB profile
+                            dst_profile = ImageCms.createProfile('sRGB')
+                            # 3. Perform the conversion
+                            # This mathematically shifts pixel values to look correct in sRGB
+                            img = ImageCms.profileToProfile(img, src_profile, dst_profile)
+                        except Exception as e:
+                            logging.warning(f"Color profile conversion failed for {filename}: {e}")
+                            # Fallback: Just convert to RGB mode if transformation failed
 
-                    # Convert to RGB to ensure compatibility (e.g. from CMYK)
+                    # B. Ensure RGB mode (handling CMYK, RGBA, etc.)
                     if img.mode != 'RGB':
                         img = img.convert('RGB')
                         
-                    img.thumbnail(THUMB_SIZE)
+                    # C. High Quality Resize
+                    img.thumbnail(THUMB_SIZE, Image.Resampling.LANCZOS)
+                    
                     thumb_buffer = BytesIO()
                     
-                    # Save args: format, quality, and preserve ICC profile
-                    save_args = {
-                        "format": "WEBP",
-                        "lossless": True,
-                        "method": 0
-                    }
-                    if icc_profile:
-                        save_args["icc_profile"] = icc_profile
-                        
-                    img.save(thumb_buffer, **save_args)
+                    # D. Save as WebP (Without embedding a profile)
+                    # Since we are now strictly sRGB, we don't need to embed the profile.
+                    # This saves space and ensures browsers treat it as standard web content.
+                    img.save(thumb_buffer, format="WEBP", quality=85, method=6)
+                    
                     thumb_blob.upload_from_string(thumb_buffer.getvalue(), content_type="image/webp")
             else:
                  exif = {} 
 
-            # 5. Default Photo Metadata (Filename -> Title/Story)
+            # 5. Default Photo Metadata
             clean_name = os.path.splitext(filename)[0].replace("_", " ").replace("-", " ")
 
             photo_data = {
@@ -166,13 +169,12 @@ def process_gallery(bucket, prefix, mode="public"):
                 "src": img_url,
                 "thumb": thumb_url,
                 "exif": exif,
-                "title": clean_name, # Default Title
-                "story": "", # Default Story (Empty is cleaner, or use clean_name)
+                "title": clean_name,
+                "story": "", 
                 "product_id": None,
                 "licensing": {}
             }
 
-            # Overlay config.json data if available
             if filename in gallery_meta["photos_meta"]:
                 manual_data = gallery_meta["photos_meta"][filename]
                 photo_data.update(manual_data)
@@ -181,7 +183,6 @@ def process_gallery(bucket, prefix, mode="public"):
 
     gallery_meta["photos"] = photos
     
-    # Cleanup internal meta key
     if "photos_meta" in gallery_meta:
         del gallery_meta["photos_meta"]
     
@@ -206,7 +207,7 @@ def main():
 
     for prefix in prefixes:
         gallery_data = process_gallery(bucket, prefix, mode=args.mode)
-        if gallery_data: 
+        if gallery_data:
             output_data["galleries"].append(gallery_data)
 
     target_file = ADMIN_DATA_FILE_PATH if args.mode == "admin" else DATA_FILE_PATH
