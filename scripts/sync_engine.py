@@ -147,7 +147,7 @@ def process_gallery(bucket, prefix, mode="public"):
                     # Save args: format, quality, and preserve ICC profile
                     save_args = {
                         "format": "WEBP",
-                        "quality": 85,
+                        "quality": 100,
                         "method": 6
                     }
                     if icc_profile:
