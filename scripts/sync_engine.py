@@ -30,11 +30,13 @@ def get_exif_data(image_bytes):
                 tag_name = ExifTags.TAGS[key]
                 if tag_name == "ISOSpeedRatings": exif_data["iso"] = val
                 if tag_name == "Model": exif_data["camera"] = str(val)
-                if tag_name == "DateTime": exif_data["date"] = str(val)
+                if (tag_name == "DateTime") and (exif_data["date"]=="N/A"): 
+                    exif_data["date"] = str(val)
                 if tag_name == "ExifOffset":
                     sub_ifd = img.getexif().get_ifd(key)
                     for sub_key, sub_val in sub_ifd.items():
                         sub_tag = ExifTags.TAGS.get(sub_key)
+                        if sub_key == "DateTimeOriginal": exif_data["date"] = str(val)
                         if sub_tag == "FNumber": exif_data["aperture"] = f"f/{float(sub_val):.1f}"
                         if sub_tag == "ExposureTime": exif_data["shutter"] = f"{sub_val}s"
                         if sub_tag == "FocalLength": exif_data["focal_length"] = f"{int(sub_val)}mm"
