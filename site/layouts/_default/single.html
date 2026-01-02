@@ -43,15 +43,15 @@
     </div>
 
     <!-- 
-        GROUPING LOGIC:
-        We sort photos by 'sub_album' so they appear sequentially. 
+        GROUPING LOGIC UPDATE:
+        We no longer sort here. The Python Sync Engine handles sorting (Date, Random, Filename).
+        We simply iterate the pre-sorted list.
     -->
-    {{ $sortedPhotos := sort $gallery.photos "sub_album" }}
     {{ $currentGroup := "INITIAL_STATE" }}
 
     <div class="space-y-12">
         
-        {{ range $index, $photo := $sortedPhotos }}
+        {{ range $index, $photo := $gallery.photos }}
             
             <!-- Check if we entered a new Sub-Album -->
             {{ if ne $photo.sub_album $currentGroup }}
@@ -70,7 +70,6 @@
                 {{ end }}
 
                 <!-- Start new Grid -->
-                <!-- Removed 'space-y-6' here to prevent conflict with CSS columns -->
                 <div class="columns-1 md:columns-2 lg:columns-3 gap-6">
             {{ end }}
 
@@ -79,11 +78,6 @@
                  x-data="{ loaded: false }"
                  @click="activeIndex = {{ $index }}; showModal = true">
                 
-                <!-- 
-                   The image starts hidden (opacity-0). 
-                   When the @load event fires, we toggle 'loaded' to true.
-                   The :class binding then switches to opacity-100 with a duration-500 transition.
-                -->
                 <img src="{{ .thumb }}" 
                      alt="{{ .filename }}" 
                      loading="lazy" 
@@ -190,3 +184,14 @@
 </div>
 {{ end }}
 {{ end }}
+```
+
+### How to use
+In your `config.json` for any gallery, you can now add the `sort_by` field:
+
+```json
+{
+  "title": "My Trip",
+  "visibility": "public",
+  "sort_by": "date" 
+}

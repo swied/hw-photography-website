@@ -4,15 +4,16 @@ import logging
 import argparse
 import re
 import time
+import random
 from io import BytesIO
-from datetime import timedelta
+from datetime import datetime, timedelta
 from google.cloud import storage
 from PIL import Image, ExifTags, ImageCms
 
 # Configuration
 BUCKET_NAME = os.environ.get("GCS_BUCKET_NAME", "my-photo-portfolio-bucket")
-DISPLAY_SIZE = (2048, 2048) # Max dimension for Lightbox view
-THUMB_SIZE = (800, 800)     # Max dimension for Grid view
+DISPLAY_SIZE = (2048, 2048) 
+THUMB_SIZE = (800, 800)     
 DATA_FILE_PATH = "site/data/photos.json"
 ADMIN_DATA_FILE_PATH = "site/data/admin_photos.json"
 
@@ -42,6 +43,12 @@ def get_exif_data(image_bytes):
         logging.warning(f"Could not extract EXIF: {e}")
     return exif_data
 
+def has_valid_exif(exif_dict):
+    """Checks if the EXIF dict has actual data (not just N/A)."""
+    if not exif_dict: return False
+    # If camera or lens is present, we consider it valid.
+    return exif_dict.get("camera", "N/A") != "N/A" or exif_dict.get("lens", "N/A") != "N/A"
+
 def slugify(text):
     text = text.lower().strip()
     text = re.sub(r'[^\w\s-]', '', text)
@@ -49,7 +56,6 @@ def slugify(text):
     return text
 
 def process_image_variant(img, target_size, quality=85):
-    """Resizes and converts image to WebP bytes with sRGB profile."""
     img_copy = img.copy()
     if img_copy.mode != 'RGB': img_copy = img_copy.convert('RGB')
     img_copy.thumbnail(target_size, Image.Resampling.LANCZOS)
@@ -58,7 +64,6 @@ def process_image_variant(img, target_size, quality=85):
     return buffer.getvalue()
 
 def load_existing_exif(file_path):
-    """Loads previous JSON to preserve EXIF data if we skip processing."""
     exif_cache = {}
     if os.path.exists(file_path):
         try:
@@ -70,6 +75,20 @@ def load_existing_exif(file_path):
                         exif_cache[key] = photo.get('exif', {})
         except Exception: pass
     return exif_cache
+
+def sort_photos(photos, method):
+    def parse_date(date_str):
+        try: return datetime.strptime(date_str, "%Y:%m:%d %H:%M:%S")
+        except (ValueError, TypeError): return datetime.min
+
+    if method == 'random':
+        random.shuffle(photos)
+        photos.sort(key=lambda x: x.get('sub_album', ''))
+    elif method == 'date':
+        photos.sort(key=lambda x: (x.get('sub_album', ''), parse_date(x['exif'].get('date'))))
+    else:
+        photos.sort(key=lambda x: (x.get('sub_album', ''), x.get('filename', '')))
+    return photos
 
 def process_gallery(bucket, prefix, exif_cache, mode="public"):
     raw_name = prefix.strip("/").split("/")[-1]
@@ -84,6 +103,7 @@ def process_gallery(bucket, prefix, exif_cache, mode="public"):
         "title": human_title,
         "story": "",
         "visibility": "public",
+        "sort_by": "filename",
         "photos_meta": {} 
     }
     
@@ -116,36 +136,50 @@ def process_gallery(bucket, prefix, exif_cache, mode="public"):
             
             thumb_exists = thumb_blob.exists()
             display_exists = display_blob.exists()
-            exif = {}
-
-            if (not thumb_exists or not display_exists) and mode != "read_only":
-                logging.info(f"Optimizing: {rel_path}")
+            
+            # --- SELF-HEALING LOGIC ---
+            # 1. Check Cache
+            cached_exif = exif_cache.get(rel_path, {})
+            
+            # 2. Determine if we need to download (Missing Files OR Missing Data)
+            needs_files = (not thumb_exists or not display_exists)
+            needs_data = not has_valid_exif(cached_exif)
+            
+            should_download = (needs_files or needs_data) and mode != "read_only"
+            
+            exif = cached_exif # Default to cache
+            
+            if should_download:
+                logging.info(f"Processing {rel_path} (Files: {needs_files}, Data Missing: {needs_data})")
                 img_bytes = blob.download_as_bytes()
+                
+                # Extract EXIF (Always refresh this if we downloaded)
                 exif = get_exif_data(img_bytes)
                 
-                with Image.open(BytesIO(img_bytes)) as img:
-                    icc_profile = img.info.get('icc_profile')
-                    if icc_profile:
-                        try:
-                            src = ImageCms.ImageCmsProfile(BytesIO(icc_profile))
-                            dst = ImageCms.createProfile('sRGB')
-                            img = ImageCms.profileToProfile(img, src, dst)
-                        except: pass
-                    
-                    if not display_exists:
-                        disp_data = process_image_variant(img, DISPLAY_SIZE, quality=90)
-                        display_blob.upload_from_string(disp_data, content_type="image/webp")
-                        try: display_blob.make_public()
-                        except: pass
+                # Only process images if files are missing
+                if needs_files:
+                    with Image.open(BytesIO(img_bytes)) as img:
+                        icc_profile = img.info.get('icc_profile')
+                        if icc_profile:
+                            try:
+                                src = ImageCms.ImageCmsProfile(BytesIO(icc_profile))
+                                dst = ImageCms.createProfile('sRGB')
+                                img = ImageCms.profileToProfile(img, src, dst)
+                            except: pass
+                        
+                        if not display_exists:
+                            disp_data = process_image_variant(img, DISPLAY_SIZE, quality=90)
+                            display_blob.upload_from_string(disp_data, content_type="image/webp")
+                            try: display_blob.make_public()
+                            except: pass
 
-                    if not thumb_exists:
-                        thumb_data = process_image_variant(img, THUMB_SIZE, quality=85)
-                        thumb_blob.upload_from_string(thumb_data, content_type="image/webp")
-                        try: thumb_blob.make_public()
-                        except: pass
-            else:
-                exif = exif_cache.get(rel_path, {})
-
+                        if not thumb_exists:
+                            thumb_data = process_image_variant(img, THUMB_SIZE, quality=85)
+                            thumb_blob.upload_from_string(thumb_data, content_type="image/webp")
+                            try: thumb_blob.make_public()
+                            except: pass
+            
+            # URL Generation
             if mode == "admin":
                 disp_url = display_blob.generate_signed_url(expiration=timedelta(hours=1)) if display_exists else None
                 thumb_url = thumb_blob.generate_signed_url(expiration=timedelta(hours=1)) if thumb_exists else None
@@ -176,6 +210,8 @@ def process_gallery(bucket, prefix, exif_cache, mode="public"):
 
             photos.append(photo_data)
 
+    photos = sort_photos(photos, gallery_meta.get("sort_by", "filename"))
+
     gallery_meta["photos"] = photos
     if "photos_meta" in gallery_meta: del gallery_meta["photos_meta"]
     if photos and "cover" not in gallery_meta: gallery_meta["cover"] = photos[0]["thumb"]
@@ -202,7 +238,7 @@ def main():
 
     os.makedirs(os.path.dirname(target_file), exist_ok=True)
     
-    # ATOMIC WRITE: Write to .tmp first, then rename
+    # ATOMIC WRITE
     temp_file = target_file + ".tmp"
     with open(temp_file, "w") as f: json.dump(output_data, f, indent=2)
     os.replace(temp_file, target_file)
