@@ -11,6 +11,7 @@
         allPhotos: {{ $gallery.photos | jsonify }},
         activeIndex: 0,
         showModal: false,
+        showInfo: false,
         get activeImage() { return this.allPhotos[this.activeIndex]; },
         next() { this.activeIndex = (this.activeIndex + 1) % this.allPhotos.length; },
         prev() { this.activeIndex = (this.activeIndex - 1 + this.allPhotos.length) % this.allPhotos.length; }
@@ -76,13 +77,23 @@
 
     </div>
 
-    <!-- Lightbox Modal (Same as before) -->
+    <!-- Lightbox Modal -->
     <div x-show="showModal" x-cloak
          class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-95 p-0 md:p-8 backdrop-blur-sm"
          x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
          x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0">
          
         <div class="relative w-full h-full flex flex-col md:flex-row bg-white md:bg-transparent md:rounded-xl overflow-hidden shadow-2xl" @click.away="showModal = false">
+            
+            <!-- Info Toggle Button -->
+            <button @click="showInfo = !showInfo" 
+                    class="absolute top-4 right-16 z-50 p-2 text-white bg-black bg-opacity-50 rounded-full hover:bg-opacity-70 transition-all"
+                    :class="{'bg-white !text-black bg-opacity-100': showInfo}"
+                    title="Toggle Details">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            </button>
+
+            <!-- Close Button -->
             <button @click="showModal = false" class="absolute top-4 right-4 z-50 p-2 text-white bg-black bg-opacity-50 rounded-full hover:bg-opacity-70 transition-all">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
             </button>
@@ -97,7 +108,15 @@
                 </button>
             </div>
 
-            <div class="w-full md:w-96 bg-white flex flex-col h-[40vh] md:h-full border-l border-gray-100 relative z-40">
+            <div class="w-full md:w-96 bg-white flex flex-col h-[40vh] md:h-full border-l border-gray-100 relative z-40"
+                 x-show="showInfo"
+                 x-transition:enter="transition ease-out duration-300"
+                 x-transition:enter-start="opacity-0 translate-x-10"
+                 x-transition:enter-end="opacity-100 translate-x-0"
+                 x-transition:leave="transition ease-in duration-200"
+                 x-transition:leave-start="opacity-100 translate-x-0"
+                 x-transition:leave-end="opacity-0 translate-x-10">
+                 
                 <div class="flex-1 overflow-y-auto p-8 space-y-8">
                     <div>
                         <h3 class="text-2xl font-bold mb-3 text-gray-900" x-text="activeImage?.title || 'Untitled'"></h3>
