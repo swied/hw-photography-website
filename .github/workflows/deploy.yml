@@ -14,7 +14,7 @@ permissions:
 
 concurrency:
   group: "pages"
-  cancel-in-progress: false
+  cancel-in-progress: true # <--- UPDATED: Cancels overlapping builds
 
 jobs:
   build:
@@ -23,6 +23,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # Python for Sync Engine
       - name: Setup Python
         uses: actions/setup-python@v4
         with:
@@ -32,19 +33,21 @@ jobs:
         run: |
           pip install google-cloud-storage Pillow
 
+      # Google Cloud Auth
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v2
         with:
           workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
           service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
-          audience: https://github.com/swied/hw-photography-website
 
+      # The Core Logic: Generates JSON data from GCS
       - name: Run Sync Engine
         env:
           GCS_BUCKET_NAME: ${{ secrets.GCS_BUCKET_NAME }}
         run: |
           python scripts/sync_engine.py --mode public
 
+      # Generate Hugo Pages for each gallery found in JSON
       - name: Generate Gallery Stubs
         run: |
           mkdir -p site/content/gallery
@@ -57,26 +60,26 @@ jobs:
           else:
               print('No photos.json found, skipping stub generation.')"
 
+      # Node.js for Tailwind CSS
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Dependencies & Build CSS
+        working-directory: ./site
+        run: |
+          npm install
+          npm run build:css
+
+      # Hugo Build
       - name: Setup Hugo
         uses: peaceiris/actions-hugo@v2
         with:
           hugo-version: '0.110.0'
           extended: true
 
-      # --- DEBUG STEP: CHECK SITE DIRECTORY ---
-      - name: Check Site Files
-        run: |
-          echo "Listing of the site directory:"
-          ls -R site
-
-      # --- DEBUG STEP: CHECK CONTENTS of site/data/photos.json ---
-      - name: Check photos.json contents
-        run: |
-          echo "Contents of site/data/photos.json:"
-          cat site/data/photos.json
-      # ---------------------------------
-
-      - name: Build
+      - name: Build Site
         working-directory: ./site
         run: hugo --minify
 
