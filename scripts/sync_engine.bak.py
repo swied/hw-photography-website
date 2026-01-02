@@ -3,10 +3,11 @@ import json
 import logging
 import argparse
 import re
+import time  # Added time for cache busting
 from io import BytesIO
 from datetime import timedelta
 from google.cloud import storage
-from PIL import Image, ExifTags, ImageCms # Added ImageCms for color conversion
+from PIL import Image, ExifTags, ImageCms
 
 # Configuration
 BUCKET_NAME = os.environ.get("GCS_BUCKET_NAME", "my-photo-portfolio-bucket")
@@ -102,6 +103,9 @@ def process_gallery(bucket, prefix, mode="public"):
     photos = []
     blobs = bucket.list_blobs(prefix=f"originals/{raw_name}/")
 
+    # Generate a timestamp once per run to bust cache
+    cache_buster = f"?v={int(time.time())}"
+
     for blob in blobs:
         if blob.name.lower().endswith(('.jpg', '.jpeg', '.png')):
             filename = os.path.basename(blob.name)
@@ -116,8 +120,16 @@ def process_gallery(bucket, prefix, mode="public"):
                 img_url = blob.public_url
                 # We need to ensure the thumbnail URL uses the correct path encoding
                 thumb_url = f"https://storage.googleapis.com/{BUCKET_NAME}/thumbnails/{raw_name}/{os.path.splitext(filename)[0]}.webp"
+                
+                # Encode spaces
                 thumb_url = thumb_url.replace(" ", "%20")
-                img_url = img_url.replace(" ", "%20") if img_url else None
+                if img_url:
+                    img_url = img_url.replace(" ", "%20")
+
+                # Append Cache Buster
+                thumb_url += cache_buster
+                if img_url:
+                    img_url += cache_buster
 
             # 4. Thumbnail Generation
             thumb_blob = bucket.blob(thumb_path)
@@ -144,7 +156,7 @@ def process_gallery(bucket, prefix, mode="public"):
                             # Fallback: Just convert to RGB mode if transformation failed
 
                     # B. Ensure RGB mode (handling CMYK, RGBA, etc.)
-                    if img.mode not in ('RGB', 'RGBA'):
+                    if img.mode != 'RGB':
                         img = img.convert('RGB')
                         
                     # C. High Quality Resize
@@ -152,9 +164,7 @@ def process_gallery(bucket, prefix, mode="public"):
                     
                     thumb_buffer = BytesIO()
                     
-                    # D. Save as WebP (Without embedding a profile)
-                    # Since we are now strictly sRGB, we don't need to embed the profile.
-                    # This saves space and ensures browsers treat it as standard web content.
+                    # D. Save as WebP
                     img.save(thumb_buffer, format="WEBP", quality=85, method=6)
                     
                     thumb_blob.upload_from_string(thumb_buffer.getvalue(), content_type="image/webp")
@@ -210,7 +220,7 @@ def main():
         if gallery_data:
             output_data["galleries"].append(gallery_data)
 
-    target_file = ADMIN_DATA_FILE_PATH if args.mode == "admin" else DATA_FILE_PATH 
+    target_file = ADMIN_DATA_FILE_PATH if args.mode == "admin" else DATA_FILE_PATH
     
     os.makedirs(os.path.dirname(target_file), exist_ok=True)
     with open(target_file, "w") as f:

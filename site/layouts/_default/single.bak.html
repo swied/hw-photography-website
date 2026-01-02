@@ -6,6 +6,12 @@
 {{ if $gallery }}
 <script src="https://assets.lemonsqueezy.com/lemon.js" defer></script>
 
+<!-- 
+    Updated Alpine Data:
+    - allPhotos: Stores the entire list of photos.
+    - activeIndex: Tracks which number we are currently viewing.
+    - next()/prev(): Helper functions to cycle through the list.
+-->
 <div class="container mx-auto px-4 py-12" 
      x-data="{ 
         allPhotos: {{ $gallery.photos | jsonify }},
@@ -19,7 +25,7 @@
      @keydown.window.arrow-right="next()"
      @keydown.window.arrow-left="prev()">
 
-    <!-- Header -->
+    <!-- Gallery Header -->
     <div class="mb-12 max-w-3xl">
         <a href="/" class="text-sm font-medium text-gray-400 hover:text-black mb-6 inline-flex items-center transition-colors">
             <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
@@ -31,87 +37,98 @@
         </div>
     </div>
 
-    <!-- 
-        GROUPING LOGIC:
-        We sort photos by 'sub_album' so they appear sequentially. 
-        We use a scratch variable to track when the group changes.
-    -->
-    {{ $sortedPhotos := sort $gallery.photos "sub_album" }}
-    {{ $currentGroup := "INITIAL_STATE" }}
-
-    <div class="space-y-12">
-        
-        {{ range $index, $photo := $sortedPhotos }}
+    <!-- Masonry Grid -->
+    <div class="columns-1 md:columns-2 lg:columns-3 gap-6 space-y-6">
+        {{ range $index, $photo := $gallery.photos }}
+        <!-- Update: We now pass the INDEX ({{ $index }}) on click -->
+        <div class="break-inside-avoid relative group cursor-pointer" 
+             @click="activeIndex = {{ $index }}; showModal = true">
             
-            <!-- Check if we entered a new Sub-Album -->
-            {{ if ne $photo.sub_album $currentGroup }}
-                
-                <!-- Close previous grid if not first item -->
-                {{ if ne $currentGroup "INITIAL_STATE" }}</div>{{ end }}
-                
-                <!-- Update current group -->
-                {{ $currentGroup = $photo.sub_album }}
+            <img src="{{ .thumb }}" alt="{{ .filename }}" loading="lazy" class="w-full rounded-lg shadow-sm group-hover:shadow-md transition-all duration-300">
+            
+            <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 transition-all rounded-lg"></div>
 
-                <!-- Sub-Album Header (Hidden if empty/root) -->
-                {{ if $photo.sub_album }}
-                <div class="pt-8 pb-4 border-b border-gray-100 sticky top-16 bg-white/95 backdrop-blur z-30">
-                    <h2 class="text-2xl font-bold text-gray-800 tracking-tight">{{ $photo.sub_album }}</h2>
-                </div>
+            <div class="absolute bottom-3 right-3 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                {{ if .product_id }}
+                <span class="bg-emerald-500 text-white text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded shadow-sm">Buy</span>
                 {{ end }}
-
-                <!-- Start new Grid -->
-                <div class="columns-1 md:columns-2 lg:columns-3 gap-6 space-y-6">
-            {{ end }}
-
-            <!-- Photo Card -->
-            <div class="break-inside-avoid relative group cursor-pointer" 
-                 @click="activeIndex = {{ $index }}; showModal = true">
-                <img src="{{ .thumb }}" alt="{{ .filename }}" loading="lazy" class="w-full rounded-lg shadow-sm group-hover:shadow-md transition-all duration-300">
-                <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 transition-all rounded-lg"></div>
+                {{ if .licensing }}
+                <span class="bg-blue-500 text-white text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded shadow-sm">License</span>
+                {{ end }}
             </div>
-
-        {{ end }}
-        <!-- Close final grid -->
         </div>
-
+        {{ end }}
     </div>
 
-    <!-- Lightbox Modal (Same as before) -->
+    <!-- Lightbox Modal -->
     <div x-show="showModal" x-cloak
          class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-95 p-0 md:p-8 backdrop-blur-sm"
          x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
          x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0">
          
         <div class="relative w-full h-full flex flex-col md:flex-row bg-white md:bg-transparent md:rounded-xl overflow-hidden shadow-2xl" @click.away="showModal = false">
+            
+            <!-- Close Button (Top Right) -->
             <button @click="showModal = false" class="absolute top-4 right-4 z-50 p-2 text-white bg-black bg-opacity-50 rounded-full hover:bg-opacity-70 transition-all">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
             </button>
 
+            <!-- Main Image Area -->
             <div class="flex-1 relative flex items-center justify-center bg-black p-4 group">
+                
+                <!-- PREVIOUS Button -->
                 <button @click.stop="prev()" class="absolute left-4 top-1/2 transform -translate-y-1/2 p-3 text-white bg-black bg-opacity-20 hover:bg-opacity-50 rounded-full transition-all opacity-0 group-hover:opacity-100 focus:opacity-100">
                     <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
                 </button>
+
+                <!-- Image -->
                 <img :src="activeImage?.src" class="max-h-full max-w-full object-contain select-none">
+
+                <!-- NEXT Button -->
                 <button @click.stop="next()" class="absolute right-4 top-1/2 transform -translate-y-1/2 p-3 text-white bg-black bg-opacity-20 hover:bg-opacity-50 rounded-full transition-all opacity-0 group-hover:opacity-100 focus:opacity-100">
                     <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
                 </button>
             </div>
 
+            <!-- Sidebar Panel -->
             <div class="w-full md:w-96 bg-white flex flex-col h-[40vh] md:h-full border-l border-gray-100 relative z-40">
                 <div class="flex-1 overflow-y-auto p-8 space-y-8">
+                    
+                    <!-- Metadata -->
                     <div>
                         <h3 class="text-2xl font-bold mb-3 text-gray-900" x-text="activeImage?.title || 'Untitled'"></h3>
-                        <!-- Display Sub-Album in Lightbox too -->
-                        <p class="text-xs font-bold text-blue-600 uppercase tracking-widest mb-2" x-show="activeImage?.sub_album" x-text="activeImage?.sub_album"></p>
                         <p class="text-gray-600 text-sm leading-relaxed" x-show="activeImage?.story" x-text="activeImage?.story"></p>
                     </div>
-                    <!-- (Tech Specs & Commerce sections unchanged) -->
+
+                    <!-- Commerce Buttons -->
+                    <div class="space-y-4">
+                        <template x-if="activeImage?.product_id">
+                            <a :href="'https://store.lemonsqueezy.com/checkout/buy/' + activeImage.product_id" 
+                               class="lemonsqueezy-button block w-full bg-gray-900 text-white text-center py-4 rounded-lg hover:bg-black transition-all font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
+                                Purchase Print / Download
+                            </a>
+                        </template>
+                        <template x-if="activeImage?.licensing && Object.keys(activeImage.licensing).length > 0">
+                            <div>
+                                <p class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Available for License</p>
+                                <div class="flex flex-wrap gap-2">
+                                    <template x-for="(url, agency) in activeImage.licensing">
+                                        <a :href="url" target="_blank" class="px-3 py-2 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded text-xs font-medium text-gray-600 uppercase tracking-wide transition-colors" x-text="agency"></a>
+                                    </template>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+
+                    <!-- Tech Specs -->
                     <div class="pt-8 border-t border-gray-100">
-                         <h4 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Technical Details</h4>
+                        <h4 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Technical Details</h4>
                         <template x-if="activeImage?.exif">
                             <dl class="grid grid-cols-2 gap-4 text-sm">
                                 <div x-show="activeImage.exif.camera"> <dt class="text-gray-400 text-xs">Camera</dt> <dd class="font-medium text-gray-900" x-text="activeImage.exif.camera"></dd> </div>
                                 <div x-show="activeImage.exif.lens"> <dt class="text-gray-400 text-xs">Lens</dt> <dd class="font-medium text-gray-900" x-text="activeImage.exif.lens"></dd> </div>
+                                <div x-show="activeImage.exif.aperture"> <dt class="text-gray-400 text-xs">Aperture</dt> <dd class="font-medium text-gray-900" x-text="activeImage.exif.aperture"></dd> </div>
+                                <div x-show="activeImage.exif.iso"> <dt class="text-gray-400 text-xs">ISO</dt> <dd class="font-medium text-gray-900" x-text="activeImage.exif.iso"></dd> </div>
                             </dl>
                         </template>
                     </div>
