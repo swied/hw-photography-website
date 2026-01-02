@@ -4,16 +4,15 @@ import logging
 import argparse
 import re
 import time
-import random # Added for random sort
 from io import BytesIO
-from datetime import datetime, timedelta # Added datetime
+from datetime import timedelta
 from google.cloud import storage
 from PIL import Image, ExifTags, ImageCms
 
 # Configuration
 BUCKET_NAME = os.environ.get("GCS_BUCKET_NAME", "my-photo-portfolio-bucket")
-DISPLAY_SIZE = (2048, 2048) 
-THUMB_SIZE = (800, 800)     
+DISPLAY_SIZE = (2048, 2048) # Max dimension for Lightbox view
+THUMB_SIZE = (800, 800)     # Max dimension for Grid view
 DATA_FILE_PATH = "site/data/photos.json"
 ADMIN_DATA_FILE_PATH = "site/data/admin_photos.json"
 
@@ -50,6 +49,7 @@ def slugify(text):
     return text
 
 def process_image_variant(img, target_size, quality=85):
+    """Resizes and converts image to WebP bytes with sRGB profile."""
     img_copy = img.copy()
     if img_copy.mode != 'RGB': img_copy = img_copy.convert('RGB')
     img_copy.thumbnail(target_size, Image.Resampling.LANCZOS)
@@ -58,6 +58,7 @@ def process_image_variant(img, target_size, quality=85):
     return buffer.getvalue()
 
 def load_existing_exif(file_path):
+    """Loads previous JSON to preserve EXIF data if we skip processing."""
     exif_cache = {}
     if os.path.exists(file_path):
         try:
@@ -69,39 +70,6 @@ def load_existing_exif(file_path):
                         exif_cache[key] = photo.get('exif', {})
         except Exception: pass
     return exif_cache
-
-# --- NEW SORTING FUNCTION ---
-def sort_photos(photos, method):
-    """Sorts photos list based on method, always keeping sub-albums grouped."""
-    
-    # Helper to parse EXIF dates
-    def parse_date(date_str):
-        try:
-            return datetime.strptime(date_str, "%Y:%m:%d %H:%M:%S")
-        except (ValueError, TypeError):
-            return datetime.min # Default to old date if missing
-
-    if method == 'random':
-        # Shuffle first to randomize, then sort by album to keep groups intact
-        random.shuffle(photos)
-        photos.sort(key=lambda x: x.get('sub_album', ''))
-        
-    elif method == 'date':
-        # Sort by Album first, then by Date
-        photos.sort(key=lambda x: (
-            x.get('sub_album', ''), 
-            parse_date(x['exif'].get('date'))
-        ))
-        
-    else: # Default: filename
-        # Sort by Album first, then by Filename
-        photos.sort(key=lambda x: (
-            x.get('sub_album', ''), 
-            x.get('filename', '')
-        ))
-
-    return photos
-# -----------------------------
 
 def process_gallery(bucket, prefix, exif_cache, mode="public"):
     raw_name = prefix.strip("/").split("/")[-1]
@@ -116,7 +84,6 @@ def process_gallery(bucket, prefix, exif_cache, mode="public"):
         "title": human_title,
         "story": "",
         "visibility": "public",
-        "sort_by": "filename", # Default sort option
         "photos_meta": {} 
     }
     
@@ -209,10 +176,6 @@ def process_gallery(bucket, prefix, exif_cache, mode="public"):
 
             photos.append(photo_data)
 
-    # --- APPLY SORTING BEFORE RETURNING ---
-    # photos = sort_photos(photos, gallery_meta.get("sort_by", "filename"))
-    photos = sort_photos(photos, gallery_meta.get("sort_by", "random"))
-
     gallery_meta["photos"] = photos
     if "photos_meta" in gallery_meta: del gallery_meta["photos_meta"]
     if photos and "cover" not in gallery_meta: gallery_meta["cover"] = photos[0]["thumb"]
@@ -238,9 +201,12 @@ def main():
         if gallery_data: output_data["galleries"].append(gallery_data)
 
     os.makedirs(os.path.dirname(target_file), exist_ok=True)
+    
+    # ATOMIC WRITE: Write to .tmp first, then rename
     temp_file = target_file + ".tmp"
     with open(temp_file, "w") as f: json.dump(output_data, f, indent=2)
     os.replace(temp_file, target_file)
+    
     logging.info(f"Manifest generated at {target_file}")
 
 if __name__ == "__main__":
