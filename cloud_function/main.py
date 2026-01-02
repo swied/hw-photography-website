@@ -20,7 +20,7 @@ def trigger_github_build(cloud_event):
 
     # OPTIONAL: Filter to avoid triggering on thumbnail generation
     # If the file is in the 'thumbnails/' folder, ignore it to prevent infinite loops.
-    if "thumbnails/" in name:
+    if "thumbnails/" in name or "display/" in name:
         print("Skipping thumbnail change to prevent loop.")
         return "Skipped"
 
