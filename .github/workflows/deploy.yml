@@ -39,6 +39,7 @@ jobs:
         with:
           workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
           service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+          audience: https://github.com/swied/hw-photography-website
 
       # The Core Logic: Generates JSON data from GCS
       - name: Run Sync Engine
