@@ -45,7 +45,6 @@
     <!-- 
         GROUPING LOGIC:
         We sort photos by 'sub_album' so they appear sequentially. 
-        We use a scratch variable to track when the group changes.
     -->
     {{ $sortedPhotos := sort $gallery.photos "sub_album" }}
     {{ $currentGroup := "INITIAL_STATE" }}
@@ -71,13 +70,27 @@
                 {{ end }}
 
                 <!-- Start new Grid -->
-                <div class="columns-1 md:columns-2 lg:columns-3 gap-6 space-y-6">
+                <!-- Removed 'space-y-6' here to prevent conflict with CSS columns -->
+                <div class="columns-1 md:columns-2 lg:columns-3 gap-6">
             {{ end }}
 
-            <!-- Photo Card -->
-            <div class="break-inside-avoid relative group cursor-pointer" 
+            <!-- Photo Card with Smooth Fade-In -->
+            <div class="break-inside-avoid relative group cursor-pointer mb-6" 
+                 x-data="{ loaded: false }"
                  @click="activeIndex = {{ $index }}; showModal = true">
-                <img src="{{ .thumb }}" alt="{{ .filename }}" loading="lazy" class="w-full rounded-lg shadow-sm group-hover:shadow-md transition-all duration-300">
+                
+                <!-- 
+                   The image starts hidden (opacity-0). 
+                   When the @load event fires, we toggle 'loaded' to true.
+                   The :class binding then switches to opacity-100 with a duration-500 transition.
+                -->
+                <img src="{{ .thumb }}" 
+                     alt="{{ .filename }}" 
+                     loading="lazy" 
+                     class="w-full rounded-lg shadow-sm group-hover:shadow-md transition-all duration-500 opacity-0"
+                     :class="loaded ? 'opacity-100' : 'opacity-0'"
+                     @load="loaded = true">
+                
                 <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 transition-all rounded-lg"></div>
             </div>
 
@@ -112,11 +125,11 @@
             </button>
 
             <div class="flex-1 relative flex items-center justify-center bg-black p-4 group">
-                <button @click.stop="prev()" class="absolute left-4 top-1/2 transform -translate-y-1/2 p-3 text-white bg-black bg-opacity-20 hover:bg-opacity-50 rounded-full transition-all opacity-0 group-hover:opacity-100 focus:opacity-100 hidden md:block">
+                <button @click.stop="prev()" class="absolute left-4 top-1/2 transform -translate-y-1/2 p-3 text-white bg-black bg-opacity-20 hover:bg-opacity-50 rounded-full transition-all opacity-0 group-hover:opacity-100 focus:opacity-100">
                     <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
                 </button>
                 <img :src="activeImage?.src" class="max-h-full max-w-full object-contain select-none">
-                <button @click.stop="next()" class="absolute right-4 top-1/2 transform -translate-y-1/2 p-3 text-white bg-black bg-opacity-20 hover:bg-opacity-50 rounded-full transition-all opacity-0 group-hover:opacity-100 focus:opacity-100 hidden md:block">
+                <button @click.stop="next()" class="absolute right-4 top-1/2 transform -translate-y-1/2 p-3 text-white bg-black bg-opacity-20 hover:bg-opacity-50 rounded-full transition-all opacity-0 group-hover:opacity-100 focus:opacity-100">
                     <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
                 </button>
             </div>
