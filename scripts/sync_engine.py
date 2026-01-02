@@ -109,7 +109,8 @@ def process_gallery(bucket, prefix, exif_cache, mode="public"):
 
     photos = []
     blobs = bucket.list_blobs(prefix=f"originals/{raw_name}/")
-    cache_buster = f"?v={int(time.time())}"
+    # cache_buster = f"?v={int(time.time())}"
+    cache_buster = ""
 
     for blob in blobs:
         if blob.name.lower().endswith(('.jpg', '.jpeg', '.png')):
