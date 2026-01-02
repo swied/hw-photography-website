@@ -43,9 +43,8 @@
     </div>
 
     <!-- 
-        GROUPING LOGIC UPDATE:
-        We no longer sort here. The Python Sync Engine handles sorting (Date, Random, Filename).
-        We simply iterate the pre-sorted list.
+        GROUPING LOGIC:
+        We iterate the pre-sorted list provided by the Python Sync Engine.
     -->
     {{ $currentGroup := "INITIAL_STATE" }}
 
@@ -70,6 +69,7 @@
                 {{ end }}
 
                 <!-- Start new Grid -->
+                <!-- Note: 'mb-6' added to items instead of 'space-y' on container for Masonry stability -->
                 <div class="columns-1 md:columns-2 lg:columns-3 gap-6">
             {{ end }}
 
@@ -184,14 +184,3 @@
 </div>
 {{ end }}
 {{ end }}
-```
-
-### How to use
-In your `config.json` for any gallery, you can now add the `sort_by` field:
-
-```json
-{
-  "title": "My Trip",
-  "visibility": "public",
-  "sort_by": "date" 
-}
