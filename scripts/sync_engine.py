@@ -11,7 +11,8 @@ from PIL import Image, ExifTags, ImageCms
 
 # Configuration
 BUCKET_NAME = os.environ.get("GCS_BUCKET_NAME", "my-photo-portfolio-bucket")
-THUMB_SIZE = (800, 800)
+DISPLAY_SIZE = (2048, 2048) # Max dimension for Lightbox view
+THUMB_SIZE = (800, 800)     # Max dimension for Grid view
 DATA_FILE_PATH = "site/data/photos.json"
 ADMIN_DATA_FILE_PATH = "site/data/admin_photos.json"
 
@@ -47,12 +48,44 @@ def slugify(text):
     text = re.sub(r'[\s_-]+', '-', text)
     return text
 
-def process_gallery(bucket, prefix, mode="public"):
+def process_image_variant(img, target_size, quality=85):
+    """Resizes and converts image to WebP bytes with sRGB profile."""
+    # Work on a copy to avoid affecting the original object
+    img_copy = img.copy()
+    
+    # 1. Color Management (Already handled in main loop, but safety check)
+    if img_copy.mode != 'RGB': 
+        img_copy = img_copy.convert('RGB')
+        
+    # 2. Resize
+    img_copy.thumbnail(target_size, Image.Resampling.LANCZOS)
+    
+    buffer = BytesIO()
+    # 3. Save as WebP
+    img_copy.save(buffer, format="WEBP", quality=quality, method=6)
+    return buffer.getvalue()
+
+def load_existing_exif(file_path):
+    """Loads previous JSON to preserve EXIF data if we skip processing."""
+    exif_cache = {}
+    if os.path.exists(file_path):
+        try:
+            with open(file_path, 'r') as f:
+                data = json.load(f)
+                for gallery in data.get('galleries', []):
+                    for photo in gallery.get('photos', []):
+                        # Key by unique ID (filename or relative path)
+                        key = photo.get('id') or photo.get('filename')
+                        exif_cache[key] = photo.get('exif', {})
+        except Exception: pass
+    return exif_cache
+
+def process_gallery(bucket, prefix, exif_cache, mode="public"):
     raw_name = prefix.strip("/").split("/")[-1]
     safe_id = slugify(raw_name)
     human_title = raw_name.replace("-", " ").replace("_", " ").title()
 
-    logging.info(f"Processing Gallery: {raw_name} (ID: {safe_id})")
+    logging.info(f"Processing Gallery: {raw_name}")
 
     config_blob = bucket.get_blob(f"{prefix}config.json")
     gallery_meta = {
@@ -69,8 +102,7 @@ def process_gallery(bucket, prefix, mode="public"):
             if "photos" in loaded_meta:
                 gallery_meta["photos_meta"] = loaded_meta.pop("photos")
             gallery_meta.update(loaded_meta)
-        except Exception as e:
-            logging.error(f"Error reading config.json for {raw_name}: {e}")
+        except Exception: pass
 
     if mode == "public" and gallery_meta["visibility"] != "public":
         return None
@@ -81,38 +113,33 @@ def process_gallery(bucket, prefix, mode="public"):
 
     for blob in blobs:
         if blob.name.lower().endswith(('.jpg', '.jpeg', '.png')):
-            # Calculate Relative Path (e.g. "SubFolder/Image.jpg")
-            # prefix is "originals/GalleryName/"
-            # blob.name is "originals/GalleryName/SubFolder/Image.jpg"
-            rel_path = blob.name[len(prefix):] 
-            
-            # Determine Sub-Album from folder structure
-            sub_album = os.path.dirname(rel_path) # "SubFolder" or "" if root
-            filename = os.path.basename(rel_path) # "Image.jpg"
+            # Paths
+            rel_path = blob.name[len(prefix):] # e.g. "SubFolder/Img.jpg"
+            sub_album = os.path.dirname(rel_path)
+            filename = os.path.basename(rel_path)
+            clean_name = os.path.splitext(filename)[0]
 
-            # Create distinct thumbnail path mirroring structure to avoid collisions
+            # Define destination paths (Mirroring folder structure)
             thumb_path = f"thumbnails/{raw_name}/{os.path.splitext(rel_path)[0]}.webp"
+            display_path = f"display/{raw_name}/{os.path.splitext(rel_path)[0]}.webp"
             
-            if mode == "admin":
-                img_url = blob.generate_signed_url(expiration=timedelta(hours=1))
-                thumb_blob = bucket.blob(thumb_path)
-                thumb_url = thumb_blob.generate_signed_url(expiration=timedelta(hours=1)) if thumb_blob.exists() else None
-            else:
-                img_url = blob.public_url
-                thumb_url = f"https://storage.googleapis.com/{BUCKET_NAME}/{thumb_path}"
-                
-                # Encode and Cache Bust
-                thumb_url = thumb_url.replace(" ", "%20") + cache_buster
-                if img_url:
-                    img_url = img_url.replace(" ", "%20") + cache_buster
-
+            # Check existence
             thumb_blob = bucket.blob(thumb_path)
-            if not thumb_blob.exists() and mode != "read_only":
-                logging.info(f"Generating thumbnail for {rel_path}")
+            display_blob = bucket.blob(display_path)
+            
+            thumb_exists = thumb_blob.exists()
+            display_exists = display_blob.exists()
+            
+            exif = {}
+
+            # PROCESS IMAGES (Download Only If Needed)
+            if (not thumb_exists or not display_exists) and mode != "read_only":
+                logging.info(f"Optimizing: {rel_path}")
                 img_bytes = blob.download_as_bytes()
                 exif = get_exif_data(img_bytes)
                 
                 with Image.open(BytesIO(img_bytes)) as img:
+                    # Color Management (sRGB Conversion)
                     icc_profile = img.info.get('icc_profile')
                     if icc_profile:
                         try:
@@ -120,24 +147,45 @@ def process_gallery(bucket, prefix, mode="public"):
                             dst = ImageCms.createProfile('sRGB')
                             img = ImageCms.profileToProfile(img, src, dst)
                         except: pass
-                    if img.mode != 'RGB': img = img.convert('RGB')
-                    img.thumbnail(THUMB_SIZE, Image.Resampling.LANCZOS)
-                    thumb_buffer = BytesIO()
-                    img.save(thumb_buffer, format="WEBP", quality=85, method=6)
-                    thumb_blob.upload_from_string(thumb_buffer.getvalue(), content_type="image/webp")
-            else:
-                 exif = {} 
+                    
+                    # Generate Display Version (Large, Quality 90)
+                    if not display_exists:
+                        disp_data = process_image_variant(img, DISPLAY_SIZE, quality=90)
+                        display_blob.upload_from_string(disp_data, content_type="image/webp")
 
-            clean_name = os.path.splitext(filename)[0].replace("_", " ").replace("-", " ")
+                    # Generate Thumbnail Version (Small, Quality 85)
+                    if not thumb_exists:
+                        thumb_data = process_image_variant(img, THUMB_SIZE, quality=85)
+                        thumb_blob.upload_from_string(thumb_data, content_type="image/webp")
+            else:
+                # If we skipped download, try to retrieve EXIF from cache (previous run)
+                # Use rel_path as key since it's unique within gallery
+                exif = exif_cache.get(rel_path, {})
+
+            # URL GENERATION
+            if mode == "admin":
+                # For admin, we generate signed URLs for the optimized assets
+                disp_url = display_blob.generate_signed_url(expiration=timedelta(hours=1)) if display_exists else None
+                thumb_url = thumb_blob.generate_signed_url(expiration=timedelta(hours=1)) if thumb_exists else None
+            else:
+                # Public URLs
+                disp_url = f"https://storage.googleapis.com/{BUCKET_NAME}/{display_path}"
+                thumb_url = f"https://storage.googleapis.com/{BUCKET_NAME}/{thumb_path}"
+                
+                # Encoding & Cache Busting
+                disp_url = disp_url.replace(" ", "%20") + cache_buster
+                thumb_url = thumb_url.replace(" ", "%20") + cache_buster
+
+            clean_title = clean_name.replace("_", " ").replace("-", " ")
 
             photo_data = {
-                "id": rel_path, # Use relative path as unique ID
+                "id": rel_path,
                 "filename": filename,
-                "sub_album": sub_album, # New Field
-                "src": img_url,
-                "thumb": thumb_url,
+                "sub_album": sub_album,
+                "src": disp_url,    # Now points to the Optimized Display version
+                "thumb": thumb_url, # Points to Thumbnail
                 "exif": exif,
-                "title": clean_name,
+                "title": clean_title,
                 "story": "", 
                 "product_id": None,
                 "licensing": {}
@@ -164,12 +212,15 @@ def main():
     iterator = bucket.list_blobs(prefix="originals/", delimiter="/")
     list(iterator)
     
+    # Load previous data to preserve EXIF
+    target_file = ADMIN_DATA_FILE_PATH if args.mode == "admin" else DATA_FILE_PATH
+    exif_cache = load_existing_exif(target_file)
+
     output_data = {"galleries": []}
     for prefix in iterator.prefixes:
-        gallery_data = process_gallery(bucket, prefix, mode=args.mode)
+        gallery_data = process_gallery(bucket, prefix, exif_cache, mode=args.mode)
         if gallery_data: output_data["galleries"].append(gallery_data)
 
-    target_file = ADMIN_DATA_FILE_PATH if args.mode == "admin" else DATA_FILE_PATH
     os.makedirs(os.path.dirname(target_file), exist_ok=True)
     with open(target_file, "w") as f: json.dump(output_data, f, indent=2)
     logging.info(f"Manifest generated at {target_file}")

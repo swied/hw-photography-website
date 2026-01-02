@@ -1,6 +1,6 @@
 baseURL = "https://heatherwiedphotography.com/"
 languageCode = "en-us"
-title = "My Portfolio (Under Construction)"
+title = "Heather Wied Photography"
 theme = [] # We are building custom layouts, so no theme needed
 
 [module]
