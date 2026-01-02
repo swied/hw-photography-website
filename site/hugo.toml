@@ -1,7 +1,7 @@
 baseURL = "https://heatherwiedphotography.com/"
 languageCode = "en-us"
 title = "Heather Wied Photography"
-theme = [] # We are building custom layouts, so no theme needed
+theme = [] # We built custom layouts, so no theme needed
 
 [module]
   [module.hugoVersion]
