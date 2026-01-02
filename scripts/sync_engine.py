@@ -210,7 +210,8 @@ def process_gallery(bucket, prefix, exif_cache, mode="public"):
             photos.append(photo_data)
 
     # --- APPLY SORTING BEFORE RETURNING ---
-    photos = sort_photos(photos, gallery_meta.get("sort_by", "filename"))
+    # photos = sort_photos(photos, gallery_meta.get("sort_by", "filename"))
+    photos = sort_photos(photos, gallery_meta.get("sort_by", "random"))
 
     gallery_meta["photos"] = photos
     if "photos_meta" in gallery_meta: del gallery_meta["photos_meta"]
