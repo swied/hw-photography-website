@@ -167,11 +167,30 @@
                     <div class="pt-8 border-t border-gray-100">
                          <h4 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Technical Details</h4>
                         <template x-if="activeImage?.exif">
-                            <dl class="grid grid-cols-2 gap-4 text-sm">
-                                <div x-show="activeImage.exif.camera"> <dt class="text-gray-400 text-xs">Camera</dt> <dd class="font-medium text-gray-900" x-text="activeImage.exif.camera"></dd> </div>
-                                <div x-show="activeImage.exif.lens"> <dt class="text-gray-400 text-xs">Lens</dt> <dd class="font-medium text-gray-900" x-text="activeImage.exif.lens"></dd> </div>
+                            <dl class="grid grid-cols-2 gap-x-4 gap-y-2">
+                                <div x-show="activeImage.exif.date">
+                                    <dt class="text-xs uppercase tracking-wider">Date</dt>
+                                    <dd class="text-gray-900" x-text="activeImage.exif.date"></dd>
+                                </div>
+                                <div x-show="activeImage.exif.camera">
+                                    <dt class="text-xs uppercase tracking-wider">Camera</dt>
+                                    <dd class="text-gray-900" x-text="activeImage.exif.camera"></dd>
+                                </div>
+                                <div x-show="activeImage.exif.lens">
+                                    <dt class="text-xs uppercase tracking-wider">Lens</dt>
+                                    <dd class="text-gray-900" x-text="activeImage.exif.lens"></dd>
+                                </div>
+                                <div x-show="activeImage.exif.aperture">
+                                    <dt class="text-xs uppercase tracking-wider">Aperture</dt>
+                                    <dd class="text-gray-900" x-text="activeImage.exif.aperture"></dd>
+                                </div>
+                                <div x-show="activeImage.exif.iso">
+                                    <dt class="text-xs uppercase tracking-wider">ISO</dt>
+                                    <dd class="text-gray-900" x-text="activeImage.exif.iso"></dd>
+                                </div>
                             </dl>
                         </template>
+
                     </div>
                 </div>
             </div>
