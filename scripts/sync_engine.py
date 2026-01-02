@@ -152,11 +152,13 @@ def process_gallery(bucket, prefix, exif_cache, mode="public"):
                     if not display_exists:
                         disp_data = process_image_variant(img, DISPLAY_SIZE, quality=90)
                         display_blob.upload_from_string(disp_data, content_type="image/webp")
+                        display_blob.make_public()
 
                     # Generate Thumbnail Version (Small, Quality 85)
                     if not thumb_exists:
                         thumb_data = process_image_variant(img, THUMB_SIZE, quality=85)
                         thumb_blob.upload_from_string(thumb_data, content_type="image/webp")
+                        thumb_blob.make_public()
             else:
                 # If we skipped download, try to retrieve EXIF from cache (previous run)
                 # Use rel_path as key since it's unique within gallery
