@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ block "title" . }}{{ .Title }} | {{ .Site.Title }}{{ end }}</title>
-    
+
+    {{ template "_internal/google_analytics.html" . }}
     <!-- Alpine.js (For the Lightbox/Modal interactions) -->
     <script src="//unpkg.com/alpinejs" defer></script>
     

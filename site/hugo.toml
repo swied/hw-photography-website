@@ -1,6 +1,7 @@
 baseURL = "https://heatherwiedphotography.com/"
 languageCode = "en-us"
 title = "Heather Wied Photography"
+googleAnalytics = "G-G4SH1WK8WK"
 theme = [] # We built custom layouts, so no theme needed
 
 [module]
