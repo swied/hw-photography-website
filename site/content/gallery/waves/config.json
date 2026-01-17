@@ -1,25 +1,27 @@
 {
-    "title": "Waves",
-    "story": "Photos of large waves",
-    "visibility": "public",
-    "photos": {
-        "DSC1610.jpg": {
-            "title": "Wave 1",
-            "story": "A large wave breaking along the coast of La Jolla",
-            "product_id": "",
-            "licensing": {
-                "adobe": "",
-                "getty": ""
-            }
-          },
-        "DSC1680.jpg": {
-            "title": "Wave 1",
-            "story": "A large wave breaking along the coast of La Jolla",
-            "product_id": "",
-            "licensing": {
-                "adobe": "",
-                "getty": ""
-            }
-          }
+  "title": "Pacific Coast Highway",
+  "story": "A journey down Highway 1, capturing the rugged cliffs and golden sunsets of the California coast.",
+  "visibility": "public",
+  "sort_by": "date",
+  "cover": "https://storage.googleapis.com/your-bucket/thumbnails/pch-trip/DSC001_WM.webp",
+  "photos": {
+    "DSC001_WM.jpg": {
+      "title": "Bixby Bridge",
+      "story": "Captured during golden hour just as the fog began to roll in over the bridge.",
+      "product_id": "33214-variant-id",
+      "licensing": {
+        "adobe": "https://stock.adobe.com/image/123456",
+        "getty": "https://www.gettyimages.com/detail/photo/123456"
+      }
+    },
+    "DSC002_WM.jpg": {
+      "title": "McWay Falls",
+      "story": "The pristine turquoise waters of the cove visible from the overlook.",
+      "product_id": "33215-variant-id",
+      "licensing": {
+        "shutterstock": "https://www.shutterstock.com/image-photo/123456",
+        "alamy": "https://www.alamy.com/image-details/123456"
+      }
     }
+  }
 }
