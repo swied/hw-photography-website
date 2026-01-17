@@ -201,7 +201,7 @@ def process_gallery(bucket, prefix, exif_cache, mode="public"):
                 "src": disp_url,
                 "thumb": thumb_url,
                 "exif": exif,
-                "title": clean_title,
+                "title": "", 
                 "story": "", 
                 "product_id": None,
                 "licensing": {}
@@ -216,8 +216,8 @@ def process_gallery(bucket, prefix, exif_cache, mode="public"):
 
     gallery_meta["photos"] = photos
     if "photos_meta" in gallery_meta: del gallery_meta["photos_meta"]
-
-    # Check if cover is missing OR empty string
+    
+    # Updated Default Cover Logic: Check if cover is missing OR empty string
     current_cover = gallery_meta.get("cover")
     if photos and not current_cover: 
         gallery_meta["cover"] = photos[0]["thumb"]
