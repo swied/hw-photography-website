@@ -73,19 +73,34 @@
                 <div class="columns-1 md:columns-2 lg:columns-3 gap-6">
             {{ end }}
 
-            <!-- Photo Card with Smooth Fade-In -->
-            <div class="break-inside-avoid relative group cursor-pointer mb-6" 
+            <!-- Photo Card with Title/Story (Card Style) -->
+            <div class="break-inside-avoid mb-6 bg-white rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 border border-gray-100 overflow-hidden group cursor-pointer" 
                  x-data="{ loaded: false }"
                  @click="activeIndex = {{ $index }}; showModal = true">
                 
-                <img src="{{ .thumb }}" 
-                     alt="{{ .filename }}" 
-                     loading="lazy" 
-                     class="w-full rounded-lg shadow-sm group-hover:shadow-md transition-all duration-500 opacity-0"
-                     :class="loaded ? 'opacity-100' : 'opacity-0'"
-                     @load="loaded = true">
-                
-                <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 transition-all rounded-lg"></div>
+                <div class="relative overflow-hidden">
+                    <img src="{{ .thumb }}" 
+                         alt="{{ .filename }}" 
+                         loading="lazy" 
+                         class="w-full transform group-hover:scale-[1.02] transition-transform duration-700 opacity-0"
+                         :class="loaded ? 'opacity-100' : 'opacity-0'"
+                         @load="loaded = true">
+                    
+                    <!-- Subtle overlay on image only -->
+                    <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-5 transition-all"></div>
+                </div>
+
+                <!-- Text Content -->
+                {{ if or .title .story }}
+                <div class="p-5">
+                    {{ if .title }}
+                    <h3 class="text-lg font-bold mb-2 text-gray-900 group-hover:text-blue-600 transition-colors leading-tight">{{ .title }}</h3>
+                    {{ end }}
+                    {{ if .story }}
+                    <p class="text-gray-500 text-sm leading-relaxed">{{ .story }}</p>
+                    {{ end }}
+                </div>
+                {{ end }}
             </div>
 
         {{ end }}
