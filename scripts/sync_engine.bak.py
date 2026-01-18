@@ -7,7 +7,7 @@ import time
 from io import BytesIO
 from datetime import timedelta
 from google.cloud import storage
-from PIL import Image, ExifTags, ImageCms
+from PIL import Image, ExifTags, ImageCms 
 
 # Configuration
 BUCKET_NAME = os.environ.get("GCS_BUCKET_NAME", "my-photo-portfolio-bucket")
