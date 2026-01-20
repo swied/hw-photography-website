@@ -122,8 +122,8 @@
             
             <!-- Info Toggle Button -->
             <button @click="showInfo = !showInfo" 
-                    class="absolute top-4 right-16 z-50 p-2 text-white bg-black bg-opacity-50 rounded-full hover:bg-opacity-70 transition-all"
-                    :class="{'!bg-white !text-black bg-opacity-100': showInfo}"
+                    class="absolute top-4 right-16 z-50 p-2 rounded-full transition-all"
+                    :class="showInfo ? 'bg-white text-black bg-opacity-100 shadow-md' : 'text-white bg-black bg-opacity-50 hover:bg-opacity-70'"
                     title="Toggle Details">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
             </button>
@@ -184,9 +184,31 @@
                         <template x-if="activeImage?.exif">
                             <dl class="grid grid-cols-2 gap-x-4 gap-y-2">
                                 <div x-show="activeImage.exif.date">
+                                    <dt class="text-xs uppercase tracking-wider">&nbsp</dt>
+                                    <dd class="text-gray-900" x-text="&nbsp"></dd>
+                                </div>
+                                <div x-show="activeImage.exif.camera">
+                                    <dt class="text-xs uppercase tracking-wider">&nbsp</dt>
+                                    <dd class="text-gray-900" x-text="&nbsp"></dd>
+                                </div>
+                                <div x-show="activeImage.exif.lens">
+                                    <dt class="text-xs uppercase tracking-wider">&nbsp</dt>
+                                    <dd class="text-gray-900" x-text="&nbsp"></dd>
+                                </div>
+                                <div x-show="activeImage.exif.aperture">
+                                    <dt class="text-xs uppercase tracking-wider">&nbsp</dt>
+                                    <dd class="text-gray-900" x-text="&nbsp"></dd>
+                                </div>
+                                <div x-show="activeImage.exif.iso">
+                                    <dt class="text-xs uppercase tracking-wider">&nbsp</dt>
+                                    <dd class="text-gray-900" x-text="&nbsp"></dd>
+                                </div>
+
+
+                                <!-- <div x-show="activeImage.exif.date">
                                     <dt class="text-xs uppercase tracking-wider">Date</dt>
                                     <dd class="text-gray-900" x-text="activeImage.exif.date"></dd>
-                                </div>
+                                </div> -->
                                 <!-- <div x-show="activeImage.exif.camera">
                                     <dt class="text-xs uppercase tracking-wider">Camera</dt>
                                     <dd class="text-gray-900" x-text="activeImage.exif.camera"></dd>
@@ -195,14 +217,14 @@
                                     <dt class="text-xs uppercase tracking-wider">Lens</dt>
                                     <dd class="text-gray-900" x-text="activeImage.exif.lens"></dd>
                                 </div> -->
-                                <div x-show="activeImage.exif.aperture">
+                                <!-- <div x-show="activeImage.exif.aperture">
                                     <dt class="text-xs uppercase tracking-wider">Aperture</dt>
                                     <dd class="text-gray-900" x-text="activeImage.exif.aperture"></dd>
                                 </div>
                                 <div x-show="activeImage.exif.iso">
                                     <dt class="text-xs uppercase tracking-wider">ISO</dt>
                                     <dd class="text-gray-900" x-text="activeImage.exif.iso"></dd>
-                                </div>
+                                </div> -->
                             </dl>
                         </template>
 
