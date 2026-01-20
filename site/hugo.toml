@@ -15,7 +15,7 @@ theme = [] # We built custom layouts, so no theme needed
       unsafe = true # Needed for raw HTML in templates if used
 
 [params]
-  description = "Example galleries - 🚧 This site is under construction 🚧"
+  description = "Photo Galleries"
   author = "Your Name"
   
   # Tailwind Support
