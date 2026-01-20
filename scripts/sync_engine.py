@@ -48,8 +48,8 @@ def get_exif_data(image_bytes):
 def has_valid_exif(exif_dict):
     """Checks if the EXIF dict has actual data (not just N/A)."""
     if not exif_dict: return False
-    # If camera or lens is present, we consider it valid.
-    return exif_dict.get("camera", "N/A") != "N/A" or exif_dict.get("lens", "N/A") != "N/A"
+    # If aperture is present, we consider it valid.
+    return exif_dict.get("aperture", "N/A")
 
 def slugify(text):
     text = text.lower().strip()
