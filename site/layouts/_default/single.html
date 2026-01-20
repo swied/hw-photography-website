@@ -154,7 +154,7 @@
                  
                 <div class="flex-1 overflow-y-auto p-8 space-y-8">
                     <div>
-                        <h3 class="text-2xl font-bold mb-3 text-gray-900" x-text="activeImage?.title || activeImage?.filename"></h3>
+                        <h3 class="text-2xl font-bold mb-3 text-gray-900" x-text="activeImage?.title || activeImage?.exif?.date"></h3>
                         <!-- Display Sub-Album in Lightbox too -->
                         <p class="text-xs font-bold text-blue-600 uppercase tracking-widest mb-2" x-show="activeImage?.sub_album" x-text="activeImage?.sub_album"></p>
                         <p class="text-gray-600 text-sm leading-relaxed" x-show="activeImage?.story" x-text="activeImage?.story"></p>
@@ -187,14 +187,14 @@
                                     <dt class="text-xs uppercase tracking-wider">Date</dt>
                                     <dd class="text-gray-900" x-text="activeImage.exif.date"></dd>
                                 </div>
-                                <div x-show="activeImage.exif.camera">
+                                <!-- <div x-show="activeImage.exif.camera">
                                     <dt class="text-xs uppercase tracking-wider">Camera</dt>
                                     <dd class="text-gray-900" x-text="activeImage.exif.camera"></dd>
                                 </div>
                                 <div x-show="activeImage.exif.lens">
                                     <dt class="text-xs uppercase tracking-wider">Lens</dt>
                                     <dd class="text-gray-900" x-text="activeImage.exif.lens"></dd>
-                                </div>
+                                </div> -->
                                 <div x-show="activeImage.exif.aperture">
                                     <dt class="text-xs uppercase tracking-wider">Aperture</dt>
                                     <dd class="text-gray-900" x-text="activeImage.exif.aperture"></dd>
