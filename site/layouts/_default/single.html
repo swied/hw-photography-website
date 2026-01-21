@@ -156,7 +156,7 @@
                  
                 <div class="flex-1 overflow-y-auto p-8 space-y-8">
                     <div>
-                        <h3 class="text-2xl font-bold mb-3 text-gray-900" x-text="activeImage?.title || &nbsp"></h3>
+                        <h3 class="text-2xl font-bold mb-3 text-gray-900" x-text="activeImage?.title || activeImage?.exif?.blank"></h3>
                         <!-- Display Sub-Album in Lightbox too -->
                         <p class="text-xs font-bold text-blue-600 uppercase tracking-widest mb-2" x-show="activeImage?.sub_album" x-text="activeImage?.sub_album"></p>
                         <p class="text-gray-600 text-sm leading-relaxed" x-show="activeImage?.story" x-text="activeImage?.story"></p>
@@ -187,23 +187,23 @@
                             <dl class="grid grid-cols-2 gap-x-4 gap-y-2">
                                 <div x-show="activeImage.exif.date">
                                     <dt class="text-xs uppercase tracking-wider">&nbsp</dt>
-                                    <dd class="text-gray-900" x-text="&nbsp"></dd>
+                                    <dd class="text-gray-900" x-text="activeImage.exif.blank"></dd>
                                 </div>
                                 <div x-show="activeImage.exif.camera">
                                     <dt class="text-xs uppercase tracking-wider">&nbsp</dt>
-                                    <dd class="text-gray-900" x-text="&nbsp"></dd>
+                                    <dd class="text-gray-900" x-text="activeImage.exif.blank"></dd>
                                 </div>
                                 <div x-show="activeImage.exif.lens">
                                     <dt class="text-xs uppercase tracking-wider">&nbsp</dt>
-                                    <dd class="text-gray-900" x-text="&nbsp"></dd>
+                                    <dd class="text-gray-900" x-text="activeImage.exif.blank"></dd>
                                 </div>
                                 <div x-show="activeImage.exif.aperture">
                                     <dt class="text-xs uppercase tracking-wider">&nbsp</dt>
-                                    <dd class="text-gray-900" x-text="&nbsp"></dd>
+                                    <dd class="text-gray-900" x-text="activeImage.exif.blank"></dd>
                                 </div>
                                 <div x-show="activeImage.exif.iso">
                                     <dt class="text-xs uppercase tracking-wider">&nbsp</dt>
-                                    <dd class="text-gray-900" x-text="&nbsp"></dd>
+                                    <dd class="text-gray-900" x-text="activeImage.exif.blank"></dd>
                                 </div>
 
 

@@ -24,6 +24,7 @@ def get_exif_data(image_bytes):
     try:
         img = Image.open(BytesIO(image_bytes))
         exif = img.getexif()
+        exif["blank"] = ""
         if not exif: return exif_data
         for key, val in exif.items():
             if key in ExifTags.TAGS:
